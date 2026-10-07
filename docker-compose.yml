@@ -1,45 +1,57 @@
 services:
-  usersvc:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-      network: host
-    command: [ "hypercorn", "src.user:app", "--bind", "0.0.0.0:5050" ]
-    ports:
-      - "5050:5050"
-    volumes:
-      - ./data_users:/app/data
-      - ./shared_data:/app/shared_data
-    environment:
-      - PORT=5050
+  db:
+    image: postgres:16-alpine
+    container_name: si1_postgres
     restart: unless-stopped
-  
-  apisvc:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-      network: host
-    command: [ "hypercorn", "src.api:app", "--bind", "0.0.0.0:5051" ]
-    ports:
-      - "5051:5051" 
-    volumes:
-      - ./data_users:/app/data
-      - ./shared_data:/app/shared_data
-    environment:
-      - PORT=5051
-    depends_on:
-      - usersvc
-    restart: unless-stopped
-  
-  dbsvc:
-    image: postgres:16
-    container_name: dbsvc
     environment:
       POSTGRES_USER: alumnodb
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: "1234"
       POSTGRES_DB: si1
     ports:
       - "5432:5432"
     volumes:
-      - ./data_files:/var/lib/postgresql/data #cambiar
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./populate.sql:/docker-entrypoint-initdb.d/02_populate.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumnodb -d si1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  usersvc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: si1_usersvc
+    command: ["hypercorn", "src.user:app", "--bind", "0.0.0.0:5050"]
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
+      - JWT_SECRET=clave_secreta_super_segura_p2
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  apisvc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: si1_apisvc
+    command: ["hypercorn", "src.api:app", "--bind", "0.0.0.0:5051"]
+    ports:
+      - "5051:5051"
+    environment:
+      - PORT=5051
+      - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
+      - JWT_SECRET=clave_secreta_super_segura_p2
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
