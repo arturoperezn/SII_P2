@@ -1,0 +1,310 @@
+================================================================================
+GUÍA Y PLAN DETALLADO PASO A PASO (TODO COMPLETO) - PRÁCTICA 2 (SISTEMAS INFORMÁTICOS)
+================================================================================
+
+Este documento describe todo el trabajo necesario para completar con éxito la Práctica 2,
+siguiendo estrictamente los requisitos del enunciado oficial y la rúbrica de evaluación.
+
+--------------------------------------------------------------------------------
+ÍNDICE DE FASES
+--------------------------------------------------------------------------------
+1. FASE 0: Diagnóstico y Preparación del Entorno (Dependencias y Docker)
+2. FASE 1: Diseño de la Base de Datos Relacional (schema.sql)
+3. FASE 2: Triggers y Procedimientos Almacenados en PostgreSQL
+4. FASE 3: Datos de Prueba y Carga Inicial (populate.sql)
+5. FASE 4: Microservicio de Gestión de Usuarios (src/user.py)
+6. FASE 5: Microservicio de la API Principal del Videoclub (src/api.py)
+7. FASE 6: Cliente de Pruebas Automatizadas y Tolerancia a Fallos (client.py)
+8. FASE 7: Optimización y Análisis de Planes de Ejecución (optimizacion.sql)
+9. FASE 8: Memoria Técnica (memoria.pdf) y Empaquetado para Entrega (P2.zip)
+
+================================================================================
+FASE 0: DIAGNÓSTICO Y PREPARACIÓN DEL ENTORNO
+================================================================================
+Objetivo: Dejar el entorno listo con las librerías necesarias y los contenedores
+conectados para trabajar sin fallos de dependencias ni de red.
+
+[ ] 0.1. Actualizar requirements.txt:
+    - Incluir las librerías obligatorias:
+      * quart: Framework ASGI asíncrono.
+      * hypercorn: Servidor ASGI para correr Quart.
+      * SQLAlchemy>=2.0: Para acceso con SQLAlchemy Core (versión 2.0+).
+      * asyncpg: Driver asíncrono indispensable para conectar SQLAlchemy con PostgreSQL.
+      * PyJWT: Para tokens de sesión stateless y seguros (Authorization: Bearer <token>).
+      * bcrypt: Para hashear y verificar contraseñas de usuarios.
+      * httpx: Para implementar el cliente de pruebas client.py.
+
+[ ] 0.2. Actualizar docker-compose.yml:
+    - Añadir el servicio 'db' con la imagen oficial de PostgreSQL (postgres:16-alpine o postgres:15):
+      * Variables de entorno:
+        POSTGRES_USER=alumnodb
+        POSTGRES_PASSWORD=1234
+        POSTGRES_DB=si1
+      * Mapeo de puerto: "5432:5432"
+      * Volumen persistente: postgres_data:/var/lib/postgresql/data
+      * Mapeo de inicialización: montar ./schema.sql y ./populate.sql en /docker-entrypoint-initdb.d/
+    - Modificar 'usersvc' y 'apisvc':
+      * Conectarlos a la misma red Docker que 'db'.
+      * Pasar la variable de entorno DATABASE_URL:
+        postgresql+asyncpg://alumnodb:1234@db:5432/si1
+      * Añadir 'depends_on: [db]' con healthcheck para asegurar que la BD está lista antes de levantar los servicios.
+    - Eliminar volúmenes obsoletos de P1 (data_users y users.json ya no se usarán).
+
+[ ] 0.3. Verificar Dockerfile:
+    - Confirmar que instala requirements.txt correctamente y arranca hypercorn sin errores.
+
+================================================================================
+FASE 1: DISEÑO DE LA BASE DE DATOS RELACIONAL (schema.sql)
+================================================================================
+Objetivo: Definir la estructura DDL completa en PostgreSQL que soporte videoclub,
+usuarios, catálogo, compras y valoraciones.
+
+[ ] 1.1. Tabla 'usuarios':
+    - id (SERIAL PRIMARY KEY)
+    - username (VARCHAR UNIQUE NOT NULL)
+    - password_hash (VARCHAR NOT NULL)
+    - pais (VARCHAR NOT NULL) -- Requerido para el endpoint /ventas/<año>/<país>
+    - saldo (NUMERIC(10, 2) NOT NULL DEFAULT 0.0 CHECK (saldo >= 0))
+    - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+[ ] 1.2. Tabla 'peliculas':
+    - id (SERIAL PRIMARY KEY)
+    - titulo (VARCHAR NOT NULL)
+    - anio (INT NOT NULL)
+    - genero (VARCHAR)
+    - director (VARCHAR NOT NULL) -- O tabla separada de directores
+    - precio (NUMERIC(10, 2) NOT NULL CHECK (precio >= 0))
+    - stock (INT NOT NULL DEFAULT 0 CHECK (stock >= 0))
+    - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+[ ] 1.3. Tabla 'actores' y relación 'pelicula_actores':
+    - Para cumplir con el requisito de "gestionar películas, actores y directores".
+
+[ ] 1.4. Tablas para Carrito y Pedidos:
+    - Tabla 'pedidos' / 'carritos':
+      * id (SERIAL PRIMARY KEY)
+      * usuario_id (INT REFERENCES usuarios(id) ON DELETE CASCADE)
+      * estado (VARCHAR CHECK (estado IN ('carrito', 'pagado', 'cancelado')) DEFAULT 'carrito')
+      * importe_total (NUMERIC(10, 2) NOT NULL DEFAULT 0.0)
+      * fecha_creacion (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      * fecha_pago (TIMESTAMP NULL) -- Se establece al pagar
+    - Tabla 'pedido_items' / 'lineas_carrito':
+      * id (SERIAL PRIMARY KEY)
+      * pedido_id (INT REFERENCES pedidos(id) ON DELETE CASCADE)
+      * pelicula_id (INT REFERENCES peliculas(id) ON DELETE RESTRICT)
+      * cantidad (INT NOT NULL DEFAULT 1 CHECK (cantidad > 0))
+      * precio_unitario (NUMERIC(10, 2) NOT NULL)
+      * UNIQUE (pedido_id, pelicula_id)
+
+[ ] 1.5. Tabla 'valoraciones':
+    - id (SERIAL PRIMARY KEY)
+    - usuario_id (INT REFERENCES usuarios(id) ON DELETE CASCADE)
+    - pelicula_id (INT REFERENCES peliculas(id) ON DELETE CASCADE)
+    - puntuacion (INT NOT NULL CHECK (puntuacion >= 0 AND puntuacion <= 10))
+    - fecha (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+    - UNIQUE (usuario_id, pelicula_id) -- Un voto por usuario y película
+
+================================================================================
+FASE 2: TRIGGERS Y PROCEDIMIENTOS ALMACENADOS EN POSTGRESQL (schema.sql)
+================================================================================
+Objetivo: Trasladar la lógica crítica a la base de datos como exige el enunciado
+(vale 1.5 puntos de la rúbrica).
+
+[ ] 2.1. Trigger de Stock y Total de Carrito:
+    - Nombre sugerido: trg_actualizar_carrito_y_stock
+    - Función PL/pgSQL: fn_actualizar_carrito_y_stock()
+    - Al insertar un item en 'pedido_items':
+      * Verificar si hay stock suficiente en 'peliculas'. Si no hay stock, lanzar excepción (RAISE EXCEPTION).
+      * Restar la cantidad del stock disponible en 'peliculas'.
+      * Recalcular y actualizar el 'importe_total' en la tabla 'pedidos'.
+    - Al eliminar un item de 'pedido_items':
+      * Devolver el stock a 'peliculas'.
+      * Restar del 'importe_total' en la tabla 'pedidos'.
+
+[ ] 2.2. Trigger de Pago y Deducción Automática de Saldo:
+    - Nombre sugerido: trg_pagar_pedido_saldo
+    - Función PL/pgSQL: fn_pagar_pedido_saldo()
+    - Disparador: BEFORE UPDATE OF estado ON pedidos (cuando pasa de 'carrito' a 'pagado'):
+      * Comprobar que el usuario tenga saldo suficiente (usuarios.saldo >= pedidos.importe_total).
+      * Si no tiene saldo: lanzar RAISE EXCEPTION 'Saldo insuficiente'.
+      * Si tiene saldo:
+        - Restar el importe del saldo del usuario (UPDATE usuarios SET saldo = saldo - NEW.importe_total).
+        - Asignar NEW.fecha_pago = CURRENT_TIMESTAMP automáticamente.
+
+[ ] 2.3. Procedimiento Almacenado / Función para Valoración Media:
+    - Nombre sugerido: sp_calcular_valoracion_media(p_pelicula_id INT)
+    - Tipo: FUNCTION o PROCEDURE en PL/pgSQL que devuelva NUMERIC.
+    - Calcula el promedio de las puntuaciones de la película en la tabla 'valoraciones' (o 0 si no hay votos).
+
+================================================================================
+FASE 3: DATOS DE PRUEBA Y CARGA INICIAL (populate.sql)
+================================================================================
+Objetivo: Dejar la base de datos poblada con un volumen de datos suficiente y variado
+para probar la aplicación y permitir que el EXPLAIN de la optimización sea realista.
+
+[ ] 3.1. Insertar usuarios variados:
+    - Distintos países: Francia, España, Italia, Alemania, etc.
+    - Distintos saldos iniciales (unos con saldo alto, otros con saldo 0 para probar error de pago).
+    - Contraseñas hasheadas válidas para hacer login en los tests.
+
+[ ] 3.2. Insertar catálogo de películas, directores y actores:
+    - Mínimo 15-20 películas con diferentes géneros, años (incluyendo 2026 y anteriores), precios y stock.
+
+[ ] 3.3. Insertar pedidos y ventas históricas:
+    - Varios pedidos en estado 'pagado' con fechas en 2026, 2025, 2024.
+    - Usuarios de Francia con compras en 2026 (para alimentar el endpoint de optimización).
+
+[ ] 3.4. Insertar valoraciones de películas (notas entre 0 y 10).
+
+================================================================================
+FASE 4: MICROSERVICIO DE GESTIÓN DE USUARIOS (src/user.py)
+================================================================================
+Objetivo: Implementar la API de usuarios asíncrona con Quart + SQLAlchemy Core.
+ELIMINAR TODO EL CÓDIGO DE FICHEROS JSON DE LA P1.
+
+[ ] 4.1. Configuración de conexión asíncrona:
+    - engine = create_async_engine(DATABASE_URL, echo=False)
+    - async_sessionmaker para sesiones o uso directo de async with engine.begin() / connect().
+
+[ ] 4.2. Helper de autenticación JWT stateless:
+    - Generar token JWT con payload: {"sub": username, "uid": user_id, "exp": ...} firmado con clave secreta.
+    - Decorador o función 'require_auth' que lea 'Authorization: Bearer <token>', valide la firma sin consultar la BD, y extraiga el usuario.
+
+[ ] 4.3. Endpoints requeridos:
+    - [PUT o POST /user]: Crear usuario (username, password, pais, saldo inicial opcional).
+      * Valida datos -> Hashea password con bcrypt -> INSERT con text() parametrizado.
+      * Error 400 si faltan datos, 409 si el usuario ya existe.
+    - [POST /user/login]: Login.
+      * Valida username y password contra el hash en BD.
+      * Devuelve token JWT (código 200). Error 401 si credenciales incorrectas, 404 si no existe.
+    - [POST /user/logout]: Logout.
+      * Como es stateless, devuelve 200 confirmando fin de sesión.
+    - [DELETE /user]: Borrar usuario autenticado.
+      * Requiere Bearer token.
+      * Elimina el usuario de la BD en un único execute().
+    - [PATCH o PUT /user/saldo]: Recargar / actualizar saldo.
+      * Requiere Bearer token.
+      * Recibe cantidad a añadir -> UPDATE con text() parametrizado. Devuelve nuevo saldo.
+
+================================================================================
+FASE 5: MICROSERVICIO DE LA API PRINCIPAL (src/api.py)
+================================================================================
+Objetivo: Implementar el videoclub con Quart + SQLAlchemy Core. Todas las consultas
+deben ser prepared statements con text(), execute() y en un ÚNICO execute() por endpoint.
+
+[ ] 5.1. Conexión asíncrona y autenticación:
+    - Conectar a la misma base de datos usando SQLAlchemy Core asíncrono.
+    - Validar Bearer token para operaciones que requieran sesión activa.
+
+[ ] 5.2. Gestión de recursos principales (Películas):
+    - [POST /peliculas]: Crear película (título, año, director, precio, stock).
+    - [DELETE /peliculas/<id>]: Borrar película.
+    - [GET /peliculas]: Listar películas con filtros (query params: genero, anio, director, titulo).
+      * IMPORTANTE: Todo el filtro y proyección en un único execute().
+
+[ ] 5.3. Funcionalidades de consumo (Carrito de compra):
+    - [POST /carrito/item]: Añadir película al carrito del usuario actual.
+      * Si no tiene carrito activo ('carrito'), se crea uno.
+      * Se inserta el item -> El TRIGGER de la BD se encarga de reducir stock y sumar importe.
+      * Si el trigger lanza error de stock, devolver HTTP 400/409 con mensaje claro.
+    - [GET /carrito]: Consultar el carrito activo del usuario con sus líneas e importe total.
+    - [POST /carrito/pagar]: Pagar el carrito actual.
+      * Hace UPDATE pedidos SET estado = 'pagado' WHERE id = :pedido_id.
+      * El TRIGGER de la BD comprueba saldo, descuenta saldo y añade fecha_pago.
+      * Si saldo insuficiente, el trigger falla -> capturar excepción y devolver HTTP 400 (Saldo insuficiente).
+
+[ ] 5.4. Consultas avanzadas (Votos y SP):
+    - [POST /peliculas/<id>/votar]: Votar una película (recibe puntuación 0-10).
+      * INSERT / UPDATE en tabla valoraciones.
+    - [GET /peliculas/<id>/valoracion]: Consultar puntuación media.
+      * Debe invocar el Procedimiento Almacenado / Función creada en la BD (SELECT sp_calcular_valoracion_media(:id)).
+
+[ ] 5.5. Endpoint clave para optimización:
+    - [GET /ventas/<año>/<país>]:
+      * Ejemplo: /ventas/2026/Francia
+      * Devuelve el historial de compras del año dado para clientes de esa nacionalidad.
+      * Consulta con JOIN entre usuarios, pedidos y pedido_items / peliculas en UN ÚNICO execute().
+
+================================================================================
+FASE 6: CLIENTE DE PRUEBAS AUTOMATIZADAS (client.py)
+================================================================================
+Objetivo: Probar de principio a fin todos los servicios y demostrar tolerancia a fallos
+(vale 1.5 puntos de la rúbrica).
+
+[ ] 6.1. Pruebas de la API de Usuarios:
+    - Crear usuario con éxito (201).
+    - Intentar crear usuario repetido (409).
+    - Login correcto (200 + token JWT recibido).
+    - Login con contraseña incorrecta (401).
+    - Recarga de saldo (200).
+    - Logout (200).
+    - Borrado de usuario (200).
+
+[ ] 6.2. Pruebas de la API de Películas:
+    - Crear película.
+    - Listar películas filtrando por año/género.
+    - Votar película con nota válida (0-10).
+    - Intentar votar con nota inválida (>10 o <0 -> error 400).
+    - Consultar nota media mediante el endpoint que llama al SP.
+
+[ ] 6.3. Pruebas del Carrito y Triggers de Base de Datos:
+    - Añadir películas al carrito y comprobar que el total se actualiza.
+    - Intentar añadir más unidades de las que hay en stock (debe saltar el trigger y dar error).
+    - Intentar pagar sin saldo suficiente (debe saltar el trigger de saldo y dar error 400).
+    - Recargar saldo del usuario.
+    - Pagar carrito con saldo suficiente (debe descontar saldo y marcar pagado).
+    - Comprobar que el saldo del usuario se redujo y el stock de la película disminuyó.
+
+[ ] 6.4. Pruebas del Endpoint de Ventas:
+    - Llamar a /ventas/2026/Francia y comprobar la respuesta estructurada.
+
+[ ] 6.5. Formato de salida de client.py:
+    - Mostrar mensajes claros con colores/iconos: [OK], [ERROR ESPERADO], resumen final de tests superados.
+
+================================================================================
+FASE 7: OPTIMIZACIÓN Y EXPLAIN (optimizacion.sql)
+================================================================================
+Objetivo: Analizar el plan de ejecución y crear índices para mejorar el rendimiento
+de la consulta /ventas/<año>/<país> (vale 1 punto de la rúbrica).
+
+[ ] 7.1. Consulta base:
+    - Escribir en optimizacion.sql la consulta exacta utilizada por /ventas/<año>/<país>.
+
+[ ] 7.2. Análisis inicial con EXPLAIN / EXPLAIN ANALYZE:
+    - Ejecutar: EXPLAIN ANALYZE SELECT ...
+    - Registrar el coste (cost=...), tiempo de ejecución (Execution Time: ... ms), y tipos de escaneo (Seq Scan vs Index Scan).
+
+[ ] 7.3. Propuestas de optimización (Creación de índices):
+    - Identificar las columnas clave en los filtros y JOINs:
+      * usuarios.pais (filtro por país)
+      * pedidos.fecha_pago (filtro por año: EXTRACT(YEAR FROM fecha_pago) o índice funcional)
+      * Claves foráneas (pedidos.usuario_id, pedido_items.pedido_id)
+    - Escribir las sentencias CREATE INDEX en optimizacion.sql.
+
+[ ] 7.4. Análisis posterior con EXPLAIN ANALYZE:
+    - Ejecutar de nuevo el plan con los índices creados.
+    - Comparar la reducción de tiempo y coste.
+
+================================================================================
+FASE 8: MEMORIA TÉCNICA Y EMPAQUETADO FINAL
+================================================================================
+Objetivo: Preparar la documentación y el archivo P2.zip listo para entrega (vale 1.5 puntos).
+
+[ ] 8.1. Documento memoria.pdf:
+    - Diagrama Entidad-Relación (E-R) formal y explicación de tablas.
+    - Explicación de los Triggers y Procedimientos Almacenados implementados.
+    - Arquitectura de microservicios y decisiones de diseño.
+    - Sección de optimización: tablas comparativas y capturas de EXPLAIN antes y después de los índices.
+    - Capturas de la ejecución exitosa de client.py.
+
+[ ] 8.2. Fichero README.txt:
+    - Instrucciones paso a paso para levantar los contenedores con docker-compose y lanzar client.py.
+
+[ ] 8.3. Empaquetado en P2.zip:
+    - Solo ficheros fuente necesarios: docker-compose.yml, Dockerfile, requirements.txt,
+      schema.sql, populate.sql, optimizacion.sql, client.py, src/, memoria.pdf, README.txt.
+    - NINGÚN archivo de caché (__pycache__), entornos virtuales (.venv) ni bases de datos locales.
+
+================================================================================
+FIN DEL PLAN DE TRABAJO
+================================================================================
