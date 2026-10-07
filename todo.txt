@@ -1,0 +1,64 @@
+TODO - Proyecto SII
+
+1. Paso 1: Configurar PostgreSQL en docker-compose.yml
+   - Añadir el servicio db con la imagen oficial de PostgreSQL (postgres:15 o postgres:16).
+   - Configurar las variables requeridas:
+     - POSTGRES_USER=alumnodb
+     - POSTGRES_PASSWORD=1234
+     - POSTGRES_DB=si1
+   - Montar los scripts schema.sql y populate.sql en /docker-entrypoint-initdb.d/ para que se ejecuten automáticamente al arrancar.
+   - Definir un volumen con persistencia externa: postgres_data:/var/lib/postgresql/data.
+   - Conectar los servicios usersvc y apisvc a la misma red y pasarles la URL de conexión: postgres://alumnodb:1234@db:5432/si1.
+
+2. Paso 2: Modelado de BD (schema.sql y populate.sql)
+   - Crear las tablas necesarias:
+     - usuarios (id, username, password_hash, pais, saldo)
+     - peliculas (id, titulo, anio, precio, stock, etc.)
+     - pedidos/carritos
+     - lineas_pedido/items
+     - valoraciones (usuario_id, pelicula_id, puntuacion 0-10)
+   - Definir los triggers obligatorios:
+     - Al añadir o eliminar una película del carrito: comprobar y actualizar stock y total del carrito.
+     - Al pagar el carrito: descontar el coste del saldo del usuario y registrar la fecha de pago, abortando si el saldo es insuficiente.
+   - Implementar un procedimiento almacenado/función PL/pgSQL para calcular la valoración media de una película.
+   - Cargar datos suficientes en populate.sql, especialmente:
+     - usuarios de distintos países
+     - pedidos de distintos años
+     - clientes franceses para la consulta de ventas
+
+3. Paso 3: Refactorizar la API de usuarios (user.py)
+   - Sustituir el almacenamiento en ficheros JSON por consultas asíncronas con SQLAlchemy Core a PostgreSQL.
+   - Implementar:
+     - registro con país y saldo inicial
+     - login con emisión de token
+     - logout
+     - borrado de usuario
+     - actualización/recarga de saldo
+
+4. Paso 4: Implementar la API principal (api.py)
+   - CRUD de películas (crear, borrar, listar por criterios).
+   - Carrito: añadir películas y pagar aprovechando los triggers de la BD.
+   - Valoraciones: votar película (0-10) y consultar la media llamando al SP.
+   - Endpoint obligatorio para optimización: GET /ventas/<año>/<país>.
+
+5. Paso 5: Cliente de pruebas (client.py)
+   - Script automatizado que valide todos los endpoints.
+   - Verificar flujo de compra.
+   - Comprobar control de errores:
+     - 400
+     - 401
+     - 404
+     - 409
+     - sin stock
+     - saldo insuficiente
+   - Comprobar llamadas autenticadas con token.
+
+6. Paso 6: Optimización y EXPLAIN (optimizacion.sql)
+   - Analizar con EXPLAIN ANALYZE la consulta del endpoint ventas/<año>/<país>.
+   - Proponer índices (por ejemplo, en fecha de venta o país del usuario) y comparar costes antes y después.
+
+7. Paso 7: Memoria (memoria.pdf)
+   - Diagrama E-R.
+   - Explicación de triggers y procedimientos almacenados.
+   - Justificación de la arquitectura.
+   - Análisis de optimización.

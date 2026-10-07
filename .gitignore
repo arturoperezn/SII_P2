@@ -1,0 +1,40 @@
+memoria.txt
+
+# Python virtual environment and secrets
+.venv/
+venv/
+env/
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tempCodeRunnerFile.py
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Datos generados en ejecución y pruebas
+data_users/
+shared_data/
+*.json
