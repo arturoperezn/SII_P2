@@ -108,3 +108,69 @@ EXECUTE FUNCTION pagar_carrito();
 CREATE OR REPLACE FUNCTION actualizar_carrito_stock()
 RETURNS TRIGGER AS $$
 DECLARE
+    v_estado VARCHAR(10);
+    v_stock INT;
+    v_dif INT;
+BEGIN
+    SELECT estado INTO v_estado FROM PEDIDOS WHERE id = COALESCE(NEW.pedido_id, OLD.pedido_id);
+    IF v_estado != 'activo' THEN
+        RAISE EXCEPTION 'No se pueden modificar items de un pedido ya pagado o cancelado';
+    END IF;
+
+    IF TG_OP = 'INSERT' THEN
+        SELECT stock INTO v_stock FROM PELICULAS WHERE id = NEW.pelicula_id FOR UPDATE;
+        IF v_stock < NEW.cantidad THEN
+            RAISE EXCEPTION 'No hay suficiente stock para la pelicula %. Stock disponible: %, Cantidad pedida: %',
+                NEW.pelicula_id, v_stock, NEW.cantidad;
+        END IF;
+        UPDATE PELICULAS SET stock = stock - NEW.cantidad WHERE id = NEW.pelicula_id;
+        UPDATE PEDIDOS 
+        SET importe = (SELECT COALESCE(SUM(cantidad * precio_unitario), 0.0) FROM PEDIDO_ITEMS WHERE pedido_id = NEW.pedido_id)
+        WHERE id = NEW.pedido_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        v_dif = NEW.cantidad - OLD.cantidad;
+        -- Solo comprobamos stock si se piden mas unidades
+        IF v_dif > 0 THEN
+            SELECT stock INTO v_stock FROM PELICULAS WHERE id = NEW.pelicula_id FOR UPDATE;
+            IF v_stock < v_dif THEN
+                RAISE EXCEPTION 'No hay suficiente stock para la pelicula %. Stock disponible: %, Cantidad pedida: %',
+                    NEW.pelicula_id, v_stock, v_dif;
+            END IF;
+        END IF;
+        UPDATE PELICULAS SET stock = stock - v_dif WHERE id = NEW.pelicula_id;
+        UPDATE PEDIDOS 
+        SET importe = (SELECT COALESCE(SUM(cantidad * precio_unitario), 0.0) FROM PEDIDO_ITEMS WHERE pedido_id = NEW.pedido_id)
+        WHERE id = NEW.pedido_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE PELICULAS SET stock = stock + OLD.cantidad WHERE id = OLD.pelicula_id;
+        UPDATE PEDIDOS 
+        SET importe = (SELECT COALESCE(SUM(cantidad * precio_unitario), 0.0) FROM PEDIDO_ITEMS WHERE pedido_id = OLD.pedido_id)
+        WHERE id = OLD.pedido_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tgr_actualizar_carrito_stock
+AFTER UPDATE OR INSERT OR DELETE ON PEDIDO_ITEMS
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_carrito_stock();
+
+-- Cancelar pedido, reponer stock
+CREATE OR REPLACE FUNCTION reponer_stock()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.estado = 'cancelado' AND OLD.estado != 'cancelado' THEN  
+        UPDATE PELICULAS pelicula
+        SET stock = pelicula.stock + item.cantidad FROM PEDIDO_ITEMS item
+        WHERE item.pelicula_id = pelicula.id AND item.pedido_id = NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tgr_reponer_stock
+BEFORE UPDATE OF estado ON PEDIDOS
+FOR EACH ROW
+EXECUTE FUNCTION reponer_stock();
