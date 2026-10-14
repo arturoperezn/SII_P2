@@ -130,7 +130,7 @@ BEGIN
         WHERE id = NEW.pedido_id;
         RETURN NEW;
     ELSIF TG_OP = 'UPDATE' THEN
-        v_dif = NEW.cantidad - OLD.cantidad;
+        v_dif := NEW.cantidad - OLD.cantidad;
         -- Solo comprobamos stock si se piden mas unidades
         IF v_dif > 0 THEN
             SELECT stock INTO v_stock FROM PELICULAS WHERE id = NEW.pelicula_id FOR UPDATE;
@@ -232,12 +232,12 @@ BEGIN
     SELECT id INTO v_pedido_id FROM PEDIDOS WHERE usuario_uid = p_usuario_uid AND estado = 'activo'
     FOR UPDATE;
     IF v_pedido_id IS NULL THEN
-        RAISE EXCEPTION 'EL usuario no tiene carrito activo para pagar'
+        RAISE EXCEPTION 'EL usuario no tiene carrito activo para pagar';
     END IF;
 
     UPDATE PEDIDOS SET estado = 'pagado' WHERE id = v_pedido_id;
 
-    return v_pedido_id;
+    RETURN v_pedido_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -246,7 +246,7 @@ CREATE OR REPLACE FUNCTION votar_pelicula(p_usuario_uid VARCHAR(64), p_pelicula_
 RETURNS VOID AS $$
 BEGIN
     IF p_calificacion < 0 OR p_calificacion > 10 THEN
-        RAISE EXCEPTION 'La valoracion de la pelicula debe estar entre 0 y 10'
+        RAISE EXCEPTION 'La valoracion de la pelicula debe estar entre 0 y 10';
     END IF;
     IF NOT EXISTS (SELECT 1 FROM PELICULAS WHERE id = p_pelicula_id) THEN
         RAISE EXCEPTION 'La pelicula con id % no existe', p_pelicula_id;
@@ -276,9 +276,9 @@ BEGIN
         usuario.uid AS usuario_uid,
         usuario.username,
         pedido.importe,
-        pedio.fecha_pago
+        pedido.fecha_pago
     FROM PEDIDOS pedido
-    JOIN USUARIOS usuario ON pedido.usuario_uid = usuario.usuario_uid 
+    JOIN USUARIOS usuario ON pedido.usuario_uid = usuario.uid 
     WHERE pedido.estado = 'pagado' AND EXTRACT(YEAR FROM pedido.fecha_pago) = p_anio AND usuario.pais = p_pais;
 END;
 $$ LANGUAGE plpgsql;
