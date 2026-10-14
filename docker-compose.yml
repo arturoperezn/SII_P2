@@ -30,7 +30,8 @@ services:
     environment:
       - PORT=5050
       - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
-      - JWT_SECRET=clave_secreta_super_segura_p2
+    volumes:
+      - shared_data:/app/shared_data
     depends_on:
       db:
         condition: service_healthy
@@ -47,7 +48,8 @@ services:
     environment:
       - PORT=5051
       - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
-      - JWT_SECRET=clave_secreta_super_segura_p2
+    volumes:
+      - shared_data:/app/shared_data
     depends_on:
       db:
         condition: service_healthy
@@ -55,3 +57,4 @@ services:
 
 volumes:
   postgres_data:
+  shared_data:

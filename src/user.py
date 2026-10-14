@@ -15,11 +15,8 @@ app = Quart(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://alumnodb:1234@localhost:5432/si1")
 engine = create_async_engine(DATABASE_URL, echo=False)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "clave_secreta_super_segura_p2")
-JWT_ALGORITHM = "HS256"
-
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
-def _load_or_create_secret_uuid_env():
+def load_or_create_secret_uuid():
     if Path("/app/shared_data").exists() or os.path.exists("/.dockerenv"):
         secret_path = Path("/app/shared_data/secret_uuid.txt")
     else:
@@ -35,7 +32,7 @@ def _load_or_create_secret_uuid_env():
             secret_uuid = f.read().strip()
         return secret_uuid
 
-secret_uuid = _load_or_create_secret_uuid_env()
+secret_uuid = load_or_create_secret_uuid()
 
 # Función aux para guardar la contraseña encriptada usando SHA-256
 def hash_pwd (password: str) -> str:
