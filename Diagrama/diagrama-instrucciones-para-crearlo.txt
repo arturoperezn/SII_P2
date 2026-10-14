@@ -1,0 +1,34 @@
+Como vas a realizar cambios en tu archivo schema.sql, el procedimiento para actualizar el diagrama más adelante consiste en limpiar lo anterior y volver a cargar el archivo limpio.
+Cuando tengas tu .sql definitivo listo, este es el procedimiento exacto paso a paso que debes seguir en pgAdmin 4 (en su cómodo modo claro):
+
+Paso 1: Eliminar la Base de Datos antigua
+
+Para evitar conflictos con tablas viejas o modificaciones previas, lo mejor es empezar de cero borrando la base de datos que creaste hoy:
+1. Abre pgAdmin 4.
+2. Despliega tu servidor en el panel izquierdo.
+3. Haz clic derecho sobre tu base de datos (mi_diagrama) y selecciona Delete/Drop.... Confirma la eliminación.
+
+Paso 2: Crear una Base de Datos limpia
+
+1. Haz clic derecho sobre Databases ➔ Create ➔ Database....
+2. Ponle el nombre (puede ser el mismo, mi_diagrama) y haz clic en Save.
+
+Paso 3: Ejecutar el nuevo schema.sql
+
+1. Haz clic izquierdo para seleccionar la nueva base de datos.
+2. Ve al menú superior Tools ➔ Query Tool.
+3. Haz clic en el icono de la carpeta (Open File) y carga tu nuevo archivo schema.sql modificado.
+4. Presiona la tecla F5 (o el botón de Play) para crear todas las tablas nuevas. Asegúrate de que abajo diga Query returned successfully.
+
+Paso 4: Generar y guardar el diagrama definitivo
+
+1. Haz clic derecho sobre el nombre de tu base de datos en el panel izquierdo.
+2. Selecciona Generate ER Diagram.
+3. En la barra superior del lienzo, haz clic en el icono de Auto-align (las flechas organizadoras) para acomodar todo automáticamente de forma limpia.
+4. Para exportarlo a imagen: Haz clic en el icono de la cámara/descarga (Download image) para guardarlo como un archivo PNG.
+
+💡 Un truco extra para ahorrar tiempo
+
+Si quieres que el diagrama se guarde con la posición exacta en la que tú acomodes las tablas a mano, dentro de la pantalla del diagrama presiona Ctrl + S y guárdalo como archivo .pgert. Así, si vuelves a cambiar algo pequeño en el futuro, podrás abrir ese archivo de proyecto directamente sin tener que organizar las cajas otra vez.
+¡Mucho éxito terminando de diseñar tu base de datos!
+Cuando vuelvas a este proceso con tu esquema finalizado, ¿te gustaría que revisemos cómo definir correctamente las Llaves Foráneas (Foreign Keys) en tu archivo .sql para asegurarnos de que pgAdmin dibuje las líneas de relación de forma automática?
