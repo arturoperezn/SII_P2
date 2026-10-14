@@ -7,7 +7,7 @@ CREATE TABLE USUARIOS (
     saldo NUMERIC(10, 2) NOT NULL DEFAULT 0.0 CHECK (saldo >= 0)
 );
 
--- Tabla peliculas
+-- Tabla películas
 CREATE TABLE PELICULAS (
     id SERIAL PRIMARY KEY,
     titulo VARCHAR(255) NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE VALORACIONES (
     UNIQUE (usuario_uid, pelicula_id)
 );
 
--- DEFINICION DE TRIGGERS
+-- DEFINICIÓN DE TRIGGERS
 
 -- Pago del carrito
 CREATE OR REPLACE FUNCTION pagar_carrito()
@@ -176,7 +176,7 @@ BEFORE UPDATE OF estado ON PEDIDOS
 FOR EACH ROW
 EXECUTE FUNCTION reponer_stock();
 
--- DEFINICION DE PROCEDIMIENTOS ALMACENADOS
+-- DEFINICIÓN DE PROCEDIMIENTOS ALMACENADOS
 
 -- Calcular la valoracion media de una pelicula
 CREATE OR REPLACE FUNCTION valoracion_media(p_pelicula_id INT)
@@ -191,7 +191,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Agregar pelicula al carrito
+-- Agregar película al carrito
 CREATE OR REPLACE FUNCTION agregar_carrito(p_usuario_uid VARCHAR(64), p_pelicula_id INT, p_cantidad INT)
 RETURNS INT AS $$
 DECLARE
@@ -241,7 +241,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Votar pelicula
+-- Votar película
 CREATE OR REPLACE FUNCTION votar_pelicula(p_usuario_uid VARCHAR(64), p_pelicula_id INT, p_calificacion INT)
 RETURNS VOID AS $$
 BEGIN
@@ -260,7 +260,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Obtener ventas por anio y pais
+-- Obtener ventas por año y pais
 CREATE OR REPLACE FUNCTION obtener_ventas_anio_pais(p_anio INT, p_pais VARCHAR(100)) 
 RETURNS TABLE (
     pedido_id INT,

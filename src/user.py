@@ -4,9 +4,8 @@ import os
 from pathlib import Path
 from hashlib import sha256
 import json
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 import bcrypt, jwt
 from datetime import datetime, timedelta, timezone
 
@@ -14,6 +13,7 @@ app = Quart(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://alumnodb:1234@localhost:5432/si1")
 engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
 def load_or_create_secret_uuid():
