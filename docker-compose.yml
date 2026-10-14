@@ -1,19 +1,57 @@
 services:
   db:
-    image: postgres:15-alpine
-    container_name: postgres_si1
+    image: postgres:16-alpine
+    container_name: si1_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: alumnodb
       POSTGRES_PASSWORD: "1234"
       POSTGRES_DB: si1
     ports:
-      - "9999:5432" # Mapea el puerto 9999 local al 5432 interno (como requiere el enunciado)
+      - "5432:5432"
     volumes:
-      # Montar los scripts en la carpeta de inicialización en orden alfabético
-      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./populate.sql:/docker-entrypoint-initdb.d/02_populate.sql
-      # Volumen persistente para los datos
       - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./populate.sql:/docker-entrypoint-initdb.d/02_populate.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumnodb -d si1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  usersvc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: si1_usersvc
+    command: ["hypercorn", "src.user:app", "--bind", "0.0.0.0:5050"]
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
+      - JWT_SECRET=clave_secreta_super_segura_p2
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  apisvc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: si1_apisvc
+    command: ["hypercorn", "src.api:app", "--bind", "0.0.0.0:5051"]
+    ports:
+      - "5051:5051"
+    environment:
+      - PORT=5051
+      - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
+      - JWT_SECRET=clave_secreta_super_segura_p2
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:
