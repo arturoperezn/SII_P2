@@ -42,6 +42,7 @@ CREATE TABLE PEDIDOS (
     id SERIAL PRIMARY KEY,
     usuario_uid VARCHAR(64) REFERENCES USUARIOS(uid) ON DELETE CASCADE,
     estado VARCHAR(10) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'pagado', 'cancelado')),
+    -- activo es estado carrito (sin pagar aun)
     importe NUMERIC(10, 2) NOT NULL DEFAULT 0.0 CHECK (importe >= 0), 
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_pago TIMESTAMP NULL
@@ -174,3 +175,49 @@ CREATE TRIGGER tgr_reponer_stock
 BEFORE UPDATE OF estado ON PEDIDOS
 FOR EACH ROW
 EXECUTE FUNCTION reponer_stock();
+
+-- DEFINICION DE PROCEDIMIENTOS ALMACENADOS
+
+-- Calcular la valoracion media de una pelicula
+CREATE OR REPLACE FUNCTION valoracion_media(p_pelicula_id INT)
+RETURNS NUMERIC AS $$
+DECLARE
+    v_media NUMERIC(4, 2);
+BEGIN
+    SELECT COALESCE(AVG(calificacion), 0.00) INTO v_media
+    FROM VALORACIONES
+    WHERE pelicula_id = p_pelicula_id;
+    RETURN v_media;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agregar pelicula al carrito
+CREATE OR REPLACE FUNCTION agregar_carrito(p_usuario_uid VARCHAR(64), p_pelicula_id INT, p_cantidad INT)
+RETURNS INT AS $$
+DECLARE
+    v_pedido_id INT;
+    v_precio NUMERIC(10, 2);
+BEGIN
+    -- Obtener carrito o crear carrito
+    SELECT id INTO v_pedido_id FROM PEDIDOS WHERE usuario_uid = p_usuario_uid AND estado = 'activo' LIMIT 1;
+    IF v_pedido_id IS NULL THEN
+        INSERT INTO PEDIDOS(usuario_uid, estado, importe)
+        VALUES(p_usuario_uid, 'activo', 0.0)
+        RETURNING id INTO v_pedido_id;
+    END IF;
+
+    -- Obtener precio unitario para insertar en PEDIDO_ITEMS
+    SELECT precio INTO v_precio FROM PELICULAS WHERE id = p_pelicula_id;
+    IF v_precio IS NULL THEN
+        RAISE EXCEPTION 'La pelicula con id % no existe', p_pelicula_id;
+    END IF;
+
+    -- Agregar al carrito
+    INSERT INTO PEDIDO_ITEMS(pedido_id, pelicula_id, cantidad, precio_unitario)
+    VALUES (v_pedido_id, p_pelicula_id, p_cantidad, v_precio)
+    ON CONFLICT(pedido_id, pelicula_id)
+    DO UPDATE SET cantidad = PEDIDO_ITEMS.cantidad + EXCLUDED.cantidad;
+
+    RETURN v_pedido_id;
+END;
+$$ LANGUAGE plpgsql;
