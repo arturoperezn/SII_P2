@@ -1,6 +1,6 @@
 -- Tabla usuarios
 CREATE TABLE USUARIOS (
-    uid VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,,
+    uid VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     pais VARCHAR(100) NOT NULL,
