@@ -4,21 +4,19 @@ import os
 from pathlib import Path
 from hashlib import sha256
 import json
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+import bcrypt, jwt
+from datetime import datetime, timedelta, timezone
 
 app = Quart(__name__)
 
-# source .venv/bin/activate
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://alumnodb:1234@localhost:5432/si1")
+engine = create_async_engine(DATABASE_URL, echo=False)
 
-
-# Comprobar si ejecutando en contenedor Docker o entorno local y establecer la ruta de datos de archivos en consecuencia
-if Path("/app/data").exists() or os.path.exists("/.dockerenv"):
-    user_data_path = Path("/app/data/users.json")
-else:
-    user_data_path = Path("data_users/users.json")
-users = {}
-if user_data_path.exists():
-    with open(user_data_path, "r") as f:
-        users = json.load(f)
+JWT_SECRET = os.getenv("JWT_SECRET", "clave_secreta_super_segura_p2")
+JWT_ALGORITHM = "HS256"
 
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
 def _load_or_create_secret_uuid_env():

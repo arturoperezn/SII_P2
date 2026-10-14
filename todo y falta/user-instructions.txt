@@ -1,0 +1,299 @@
+================================================================================
+GUÍA DETALLADA PASO A PASO: IMPLEMENTACIÓN DE USER.PY (P2 - SISTEMAS INFORMÁTICOS)
+================================================================================
+
+1. EL GRAN CAMBIO CONCEPTUAL: DE LA P1 A LA P2
+--------------------------------------------------------------------------------
+En la Práctica 1, los usuarios se guardaban en memoria y se volcaban en un fichero
+JSON plano (users.json). El token era un hash estático calculado con uuid5.
+
+En la Práctica 2, el enunciado oficial exige:
+1. Base de Datos Relacional Real: Los datos residen en PostgreSQL (si1), en la tabla
+   USUARIOS.
+2. SQLAlchemy Core Asíncrono:
+   - Se usa create_async_engine sobre el driver asyncpg.
+   - Prohibido el ORM: no usamos modelos tipo clase (User.query o session.add()),
+     sino sentencias SQL escritas a mano con text("...").
+   - Prepared Statements: Todas las sentencias van parametrizadas con variables
+     :parametro (evitando inyecciones SQL y permitiendo precompilación en el motor).
+3. Regla de Oro (Sección 2.2.2 del enunciado):
+   "Cada consulta deberá ejecutarse en un único execute(), no es válido lanzar varios
+   execute() y luego combinar los resultados en python."
+4. Seguridad Moderna:
+   - Bcrypt: Para no guardar contraseñas en texto plano ni con algoritmos vulnerables
+     a GPUs como MD5/SHA.
+   - Tokens JWT Stateless: El servidor genera un token firmado criptográficamente;
+     la base de datos NO almacena tokens. Quien tenga el token válido en la cabecera
+     Authorization: Bearer <token> está autenticado.
+
+
+================================================================================
+PARTE 1: IMPORTS Y CONEXIÓN ASÍNCRONA A POSTGRESQL
+================================================================================
+
+import os
+from quart import Quart, jsonify, request
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+from uuid import uuid4
+import jwt
+import bcrypt
+from datetime import datetime, timedelta, timezone
+
+app = Quart(__name__)
+
+# 1. URL de conexión a PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://alumnodb:1234@localhost:5432/si1")
+engine = create_async_engine(DATABASE_URL, echo=False)
+
+# 2. Configuración de JWT (Tokens Stateless)
+JWT_SECRET = os.getenv("JWT_SECRET", "clave_secreta_super_segura_p2")
+JWT_ALGORITHM = "HS256"
+
+Explicación:
+- postgresql+asyncpg://...: Le indica a SQLAlchemy que use el driver asíncrono asyncpg.
+  Esto permite que Quart atienda peticiones simultáneas sin bloquear el hilo principal.
+- os.getenv("DATABASE_URL", ...): Dentro de Docker leerá la variable del docker-compose.yml
+  (db:5432). En local, usará localhost:5432.
+- engine = create_async_engine(...): Crea el pool de conexiones asíncrono hacia PostgreSQL.
+- JWT_SECRET: Clave secreta con la que se firman digitalmente los tokens. Nadie puede
+  falsificar un token sin conocer esta clave.
+
+
+================================================================================
+PARTE 2: SEGURIDAD Y AUTENTICACIÓN (BCRYPT + JWT)
+================================================================================
+
+def hash_password(password: str) -> str:
+    """Genera un hash seguro con sal aleatoria usando Bcrypt."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+def check_password(password: str, hashed: str) -> bool:
+    """Verifica si la contraseña escrita coincide con el hash almacenado."""
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
+
+def generate_token(user_uid: str, username: str) -> str:
+    """Crea un JWT firmado con expiración de 12 horas."""
+    payload = {
+        "uid": str(user_uid),
+        "username": username,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=12)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def get_current_user_payload():
+    """Lee la cabecera 'Authorization: Bearer <token>' y decodifica el usuario."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except Exception:
+        return None
+
+Explicación:
+- ¿Por qué bcrypt y no SHA-256?: SHA-256 es demasiado rápido y vulnerable a ataques
+  de fuerza bruta con GPUs. Bcrypt añade un retardo de procesamiento y una sal única
+  por usuario contra tablas arcoíris.
+- ¿Qué es un token Stateless?: En JWT la información (uid, username, exp) viaja en el
+  propio token codificada en Base64. Al recibirla, el servidor solo verifica la firma.
+  No requiere consultas a la base de datos para comprobar si la sesión existe.
+
+
+================================================================================
+PARTE 3: REGISTRO DE USUARIO (PUT /user)
+================================================================================
+
+@app.route("/user", methods=["PUT", "POST"])
+async def register_user():
+    data = await request.get_json() or {}
+    username = data.get("name") or data.get("username")
+    password = data.get("password")
+    pais = data.get("pais", "España")
+    saldo = float(data.get("saldo", 0.0))
+
+    # 1. Validación de campos obligatorios
+    if not username or not password:
+        return jsonify({"error": "Faltan username o password"}), 400
+
+    # 2. Generación del UID y hash de contraseña
+    user_uid = str(uuid4())
+    pwd_hash = hash_password(password)
+
+    # 3. Consulta parametrizada en 1 SOLO EXECUTE
+    query = text("""
+        INSERT INTO USUARIOS (uid, username, password_hash, pais, saldo)
+        VALUES (:uid, :username, :pwd_hash, :pais, :saldo)
+        RETURNING uid, username, pais, saldo
+    """)
+
+    try:
+        async with engine.begin() as conn:
+            res = await conn.execute(query, {
+                "uid": user_uid,
+                "username": username,
+                "pwd_hash": pwd_hash,
+                "pais": pais,
+                "saldo": saldo
+            })
+            new_user = res.mappings().first()
+    except IntegrityError:
+        # Violación de clave única (username ya existe en BD)
+        return jsonify({"error": "El usuario ya existe"}), 409
+
+    # 4. Respuesta con token emitido
+    token = generate_token(new_user["uid"], new_user["username"])
+    return jsonify({
+        "message": "Usuario creado exitosamente",
+        "uid": new_user["uid"],
+        "username": new_user["username"],
+        "token": token
+    }), 201
+
+Explicación:
+- Cumplimiento de 1 solo execute(): No hacemos un SELECT previo para verificar si el
+  usuario existe. La tabla USUARIOS tiene username UNIQUE. Si ya existe, PostgreSQL lanza
+  un error de integridad (IntegrityError) que capturamos para devolver HTTP 409 Conflict.
+- RETURNING: Devuelve los datos insertados en la misma sentencia sin otra consulta.
+
+
+================================================================================
+PARTE 4: INICIO Y CIERRE DE SESIÓN (POST /login y POST /logout)
+================================================================================
+
+@app.post("/user/login")
+@app.post("/login")
+@app.post("/user")
+async def login():
+    data = await request.get_json() or {}
+    username = data.get("name") or data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Faltan credenciales"}), 400
+
+    # 1 ÚNICO execute() para buscar el usuario por username
+    query = text("SELECT uid, username, password_hash, pais, saldo FROM USUARIOS WHERE username = :username")
+
+    async with engine.connect() as conn:
+        res = await conn.execute(query, {"username": username})
+        user = res.mappings().first()
+
+    # Si no existe en la BD
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    # Comparamos contraseña en texto claro contra el hash de la BD
+    if not check_password(password, user["password_hash"]):
+        return jsonify({"error": "Password incorrecta"}), 401
+
+    token = generate_token(user["uid"], user["username"])
+    return jsonify({
+        "uid": user["uid"],
+        "username": user["username"],
+        "token": token
+    }), 200
+
+@app.post("/user/logout")
+@app.post("/logout")
+async def logout():
+    user = get_current_user_payload()
+    if not user:
+        return jsonify({"error": "No autorizado"}), 401
+    
+    # En stateless, el logout consiste en confirmar para que el cliente descarte el token
+    return jsonify({"message": "Sesion cerrada correctamente"}), 200
+
+Explicación:
+- Múltiples rutas decoradas: @app.post("/user/login"), @app.post("/login"), @app.post("/user")
+  garantizan compatibilidad con clientes de P1 o nuevos de P2.
+- engine.connect(): Usado para SELECT porque no necesita transacción de escritura.
+
+
+================================================================================
+PARTE 5: BORRAR USUARIO (DELETE /user)
+================================================================================
+
+@app.delete("/user")
+async def delete_user():
+    # 1. Requiere autenticación Bearer
+    user = get_current_user_payload()
+    if not user:
+        return jsonify({"error": "No autorizado"}), 401
+
+    # 2. Borra al usuario autenticado en 1 SOLO EXECUTE
+    query = text("DELETE FROM USUARIOS WHERE uid = :uid RETURNING uid")
+
+    async with engine.begin() as conn:
+        res = await conn.execute(query, {"uid": user["uid"]})
+        deleted = res.first()
+
+    if not deleted:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    return jsonify({"message": "Usuario eliminado correctamente"}), 200
+
+Explicación:
+- El UID se extrae exclusivamente del JWT verificado. Un usuario nunca puede borrar a otro.
+- Gracias al ON DELETE CASCADE en schema.sql, se eliminan automáticamente sus pedidos y valoraciones.
+
+
+================================================================================
+PARTE 6: RECARGA / MODIFICACIÓN DE SALDO (PATCH /user/saldo)
+================================================================================
+
+@app.patch("/user/saldo")
+@app.patch("/user")
+async def recharge_saldo():
+    user = get_current_user_payload()
+    if not user:
+        return jsonify({"error": "No autorizado"}), 401
+
+    data = await request.get_json() or {}
+    incremento = data.get("saldo") or data.get("incremento") or data.get("amount")
+
+    if incremento is None or float(incremento) <= 0:
+        return jsonify({"error": "Debe indicar un incremento de saldo valido (> 0)"}), 400
+
+    # Incremento atómico en 1 ÚNICO execute()
+    query = text("""
+        UPDATE USUARIOS 
+        SET saldo = saldo + :inc 
+        WHERE uid = :uid 
+        RETURNING saldo
+    """)
+
+    async with engine.begin() as conn:
+        res = await conn.execute(query, {"inc": float(incremento), "uid": user["uid"]})
+        updated = res.mappings().first()
+
+    return jsonify({
+        "message": "Saldo recargado exitosamente",
+        "saldo": float(updated["saldo"])
+    }), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5050)
+
+Explicación:
+- Hacer saldo = saldo + :inc en SQL es atómico y previene condiciones de carrera si llegan
+  múltiples recargas simultáneas.
+
+
+================================================================================
+TABLA DE CÓDIGOS HTTP IMPLEMENTADOS
+================================================================================
+Endpoint             | Códigos HTTP controlados
+---------------------+----------------------------------------------------------
+PUT /user            | 201 (creado con token), 400 (faltan campos), 409 (duplicado)
+POST /login          | 200 (token emitido), 400 (faltan datos), 401 (password mal), 404 (no existe)
+POST /logout         | 200 (éxito), 401 (no autenticado)
+DELETE /user         | 200 (borrado), 401 (no autenticado), 404 (no encontrado)
+PATCH /user/saldo    | 200 (saldo actualizado), 400 (importe inválido), 401 (no autenticado)
+================================================================================
