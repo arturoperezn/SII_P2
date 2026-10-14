@@ -14,7 +14,7 @@ CREATE TABLE PELICULAS (
     anio INT NOT NULL,
     genero VARCHAR(100),
     precio NUMERIC(10, 2) NOT NULL CHECK (precio >= 0),
-    stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0)
 );
 
 -- Actores, directores y relacion con pelicula Tabla
@@ -54,7 +54,7 @@ CREATE TABLE PEDIDO_ITEMS (
     cantidad INT NOT NULL DEFAULT 1 CHECK (cantidad > 0),
     precio_unitario NUMERIC(10, 2) NOT NULL CHECK (precio_unitario >= 0),
     UNIQUE(pedido_id, pelicula_id)
-;)
+);
 
 -- Tabla valoraciones
 CREATE TABLE VALORACIONES (
@@ -219,5 +219,66 @@ BEGIN
     DO UPDATE SET cantidad = PEDIDO_ITEMS.cantidad + EXCLUDED.cantidad;
 
     RETURN v_pedido_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Pagar carrito de un usuario
+CREATE OR REPLACE FUNCTION pagar_carrito_usuario(p_usuario_uid VARCHAR(64))
+RETURNS INT AS $$
+DECLARE
+    v_pedido_id INT;
+BEGIN
+    -- Obtener carrito
+    SELECT id INTO v_pedido_id FROM PEDIDOS WHERE usuario_uid = p_usuario_uid AND estado = 'activo'
+    FOR UPDATE;
+    IF v_pedido_id IS NULL THEN
+        RAISE EXCEPTION 'EL usuario no tiene carrito activo para pagar'
+    END IF;
+
+    UPDATE PEDIDOS SET estado = 'pagado' WHERE id = v_pedido_id;
+
+    return v_pedido_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Votar pelicula
+CREATE OR REPLACE FUNCTION votar_pelicula(p_usuario_uid VARCHAR(64), p_pelicula_id INT, p_calificacion INT)
+RETURNS VOID AS $$
+BEGIN
+    IF p_calificacion < 0 OR p_calificacion > 10 THEN
+        RAISE EXCEPTION 'La valoracion de la pelicula debe estar entre 0 y 10'
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM PELICULAS WHERE id = p_pelicula_id) THEN
+        RAISE EXCEPTION 'La pelicula con id % no existe', p_pelicula_id;
+    END IF;
+    INSERT INTO VALORACIONES(pelicula_id, usuario_uid, calificacion, fecha_creacion)
+    VALUES (p_pelicula_id, p_usuario_uid, p_calificacion, CURRENT_TIMESTAMP)
+    ON CONFLICT(usuario_uid, pelicula_id)
+    DO UPDATE SET
+        calificacion = EXCLUDED.calificacion,
+        fecha_creacion = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Obtener ventas por anio y pais
+CREATE OR REPLACE FUNCTION obtener_ventas_anio_pais(p_anio INT, p_pais VARCHAR(100)) 
+RETURNS TABLE (
+    pedido_id INT,
+    usuario_uid VARCHAR(64),
+    username VARCHAR(100),
+    importe NUMERIC(10, 2),
+    fecha_pago TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        pedido.id AS pedido_id,
+        usuario.uid AS usuario_uid,
+        usuario.username,
+        pedido.importe,
+        pedio.fecha_pago
+    FROM PEDIDOS pedido
+    JOIN USUARIOS usuario ON pedido.usuario_uid = usuario.usuario_uid 
+    WHERE pedido.estado = 'pagado' AND EXTRACT(YEAR FROM pedido.fecha_pago) = p_anio AND usuario.pais = p_pais;
 END;
 $$ LANGUAGE plpgsql;
