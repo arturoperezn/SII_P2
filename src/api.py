@@ -36,6 +36,26 @@ def load_or_create_secret_uuid():
 
 secret_uuid = load_or_create_secret_uuid()
 
+# Extrae el uid del token de usuario
+def extract_uid_from_token():
+    token = request.headers.get("Authorization")
+    if not token or not token.startswith("Bearer "): 
+        return None
+    token = token.replace("Bearer ", "")
+    if not token:
+        return None
+    if "." not in token:
+        return None
+    parts = token.split(".")
+    if len(parts) != 2:
+        return None
+    user_uid = parts[0]
+    hash = parts[1]
+    if hash == str(uuid5(UUID(secret_uuid), user_uid)):
+        return user_uid
+    return None
+    
+
 # Creación de película
 @app.post('/api/peliculas')
 async def create_movie():
@@ -275,3 +295,40 @@ async def get_movies():
                 return jsonify({"message": "Movies found:", "Movies": peliculas}), 200
             except Exception as e:
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+
+# Añadir pelicula al carrito de un usuario
+@post ('/api/carrito')
+async def add_to_cart():
+    user_uid = extract_uid_from_token()
+    if not user_uid:
+        return jsonify({"error": "Token de usuario inválido o no proporcionado"}), 401
+    data = await request.get_json()
+    if not data:
+        return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
+    movie_id = data.get("movie_id")
+    quantity = data.get("quantity", 1)
+    if not movie_id or not isinstance(quantity, int) or quantity <= 0:
+        return jsonify({"error": "Faltan parámetros requeridos (movie_id) o son inválidos (quantity debe ser un número entero positivo)"}), 400
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                pelicula_query = text("SELECT precio FROM PELICULAS WHERE id = :movie_id")
+                result = await session.execute(pelicula_query, {"movie_id": movie_id})
+                pelicula = result.mappings().one_or_none()
+                if not pelicula:
+                    return jsonify({"error": "Pelicula no encontrada"}), 404
+                precio = pelicula["precio"]
+                carrito_query = text("SELECT id FROM PEDIDOS WHERE usuario_uid = :user_uid AND estado = 'activo'")
+                result = await session.execute(carrito_query, {"user_uid": user_uid})
+                carrito_id = result.scalar()
+                if not carrito_id:
+                    carrito_query = text("INSERT INTO PEDIDOS (usuario_uid, estado, importe) VALUES (:user_uid, 'activo', 0.0) RETURNING id")
+                    result = await session.execute(carrito_query, {"user_uid": user_uid})
+                    carrito_id = result.scalar()
+                insertar_query = text("INSERT INTO PEDIDO_ITEMS (pedido_id, pelicula_id, cantidad, precio_unitario) VALUES (:pedido_id, :pelicula_id, :cantidad, :precio_unitario) ON CONFLICT (pedido_id, pelicula_id) DO UPDATE SET cantidad = PEDIDO_ITEMS.cantidad + EXCLUDED.cantidad, precio_unitario = EXCLUDED.precio_unitario RETURNING cantidad, precio_unitario")
+                result = await session.execute(insertar_query, {"pedido_id": carrito_id, "pelicula_id": movie_id, "cantidad": quantity, "precio_unitario": precio})
+                item = result.mappings().one()
+                return jsonify({"message": "Pelicula añadida al carrito", "pedido_id": carrito_id, "pelicula_id": movie_id, "cantidad": item["cantidad"], "precio_unitario": float(item["precio_unitario"])}), 201
+            except Exception as e:
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+    
