@@ -31,7 +31,7 @@ services:
       - PORT=5050
       - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
     volumes:
-      - shared_data:/app/shared_data
+      - ./shared_data:/app/shared_data
     depends_on:
       db:
         condition: service_healthy
@@ -49,7 +49,7 @@ services:
       - PORT=5051
       - DATABASE_URL=postgresql+asyncpg://alumnodb:1234@db:5432/si1
     volumes:
-      - shared_data:/app/shared_data
+      - ./shared_data:/app/shared_data
     depends_on:
       db:
         condition: service_healthy
@@ -57,4 +57,3 @@ services:
 
 volumes:
   postgres_data:
-  shared_data:
