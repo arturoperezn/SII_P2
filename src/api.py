@@ -1,5 +1,3 @@
-import re
-
 from quart import Quart, jsonify, request
 from uuid import uuid4, uuid5, UUID
 import os
