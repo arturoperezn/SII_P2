@@ -41,7 +41,7 @@ CREATE TABLE PELICULA_DIRECTORES (
 CREATE TABLE PEDIDOS (
     id SERIAL PRIMARY KEY,
     usuario_uid VARCHAR(64) REFERENCES USUARIOS(uid) ON DELETE CASCADE,
-    estado VARCHAR(10) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'pagado', 'cancelado')),
+    estado VARCHAR(10) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'pagado')),
     -- activo es estado carrito (sin pagar aun)
     importe NUMERIC(10, 2) NOT NULL DEFAULT 0.0 CHECK (importe >= 0), 
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -115,7 +115,7 @@ DECLARE
 BEGIN
     SELECT estado INTO v_estado FROM PEDIDOS WHERE id = COALESCE(NEW.pedido_id, OLD.pedido_id);
     IF v_estado != 'activo' THEN
-        RAISE EXCEPTION 'No se pueden modificar items de un pedido ya pagado o cancelado';
+        RAISE EXCEPTION 'No se pueden modificar items de un pedido ya pagado';
     END IF;
 
     IF TG_OP = 'INSERT' THEN
@@ -159,23 +159,6 @@ AFTER UPDATE OR INSERT OR DELETE ON PEDIDO_ITEMS
 FOR EACH ROW
 EXECUTE FUNCTION actualizar_carrito_stock();
 
--- Cancelar pedido, reponer stock
-CREATE OR REPLACE FUNCTION reponer_stock()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.estado = 'cancelado' AND OLD.estado != 'cancelado' THEN  
-        UPDATE PELICULAS pelicula
-        SET stock = pelicula.stock + item.cantidad FROM PEDIDO_ITEMS item
-        WHERE item.pelicula_id = pelicula.id AND item.pedido_id = NEW.id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER tgr_reponer_stock
-BEFORE UPDATE OF estado ON PEDIDOS
-FOR EACH ROW
-EXECUTE FUNCTION reponer_stock();
-
 -- DEFINICIÓN DE PROCEDIMIENTOS ALMACENADOS
 
 -- Calcular la valoracion media de una pelicula
@@ -184,6 +167,9 @@ RETURNS NUMERIC AS $$
 DECLARE
     v_media NUMERIC(4, 2);
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM PELICULAS WHERE id = p_pelicula_id) THEN
+        RAISE EXCEPTION 'La pelicula con id % no existe', p_pelicula_id;
+    END IF;
     SELECT COALESCE(AVG(calificacion), 0.00) INTO v_media
     FROM VALORACIONES
     WHERE pelicula_id = p_pelicula_id;

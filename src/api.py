@@ -7,7 +7,7 @@ from pathlib import Path
 from hashlib import sha256
 import json
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSessionç
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -98,7 +98,7 @@ async def create_movie():
 
 # Eliminación de película
 @app.delete('/api/peliculas/<int:movie_id>')
-async def delete_movie(movie_id):
+async def delete_movie(movie_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -132,7 +132,7 @@ async def create_director():
 
 # Eliminar director
 @app.delete('/api/directores/<int:director_id>')
-async def delete_director(director_id):
+async def delete_director(director_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -166,7 +166,7 @@ async def create_actor():
 
 # Eliminar actor
 @app.delete('/api/actores/<int:actor_id>')
-async def delete_actor(actor_id):
+async def delete_actor(actor_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -180,7 +180,7 @@ async def delete_actor(actor_id):
 
 # Añadir actor a película
 @app.post('/api/peliculas/<int:movie_id>/actores/<int:actor_id>')
-async def add_actor_to_movie(movie_id, actor_id):
+async def add_actor_to_movie(movie_id: int, actor_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -194,7 +194,7 @@ async def add_actor_to_movie(movie_id, actor_id):
 
 # Añadir director a película
 @app.post('/api/peliculas/<int:movie_id>/directores/<int:director_id>')
-async def add_director_to_movie(movie_id, director_id):
+async def add_director_to_movie(movie_id: int, director_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -208,7 +208,7 @@ async def add_director_to_movie(movie_id, director_id):
 
 # Añadir o reducir stock a película
 @app.post('/api/peliculas/<int:movie_id>/stock')
-async def add_stock_to_movie(movie_id):
+async def add_stock_to_movie(movie_id: int):
     data = await request.get_json()
     if not data or "stock" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
@@ -232,7 +232,7 @@ async def add_stock_to_movie(movie_id):
 
 # Establecer el stock de una película
 @app.put('/api/peliculas/<int:movie_id>/stock')
-async def set_stock_of_movie(movie_id):
+async def set_stock_of_movie(movie_id: int):
     data = await request.get_json()
     if not data or "stock" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
@@ -285,10 +285,10 @@ async def get_movies():
                 for row in rows:
                     pelicula = {
                         "id": row["id"],
-                        "titulo": row["titulo"],
-                        "anio": row["anio"],
-                        "genero": row["genero"],
-                        "precio": float(row["precio"]),
+                        "title": row["titulo"],
+                        "year": row["anio"],
+                        "genre": row["genero"],
+                        "price": float(row["precio"]),
                         "stock": row["stock"]
                     }
                     peliculas.append(pelicula)
@@ -297,7 +297,7 @@ async def get_movies():
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
 # Añadir pelicula al carrito de un usuario
-@post ('/api/carrito')
+@app.post ('/api/carrito')
 async def add_to_cart():
     user_uid = extract_uid_from_token()
     if not user_uid:
@@ -312,23 +312,106 @@ async def add_to_cart():
     async with async_session() as session:
         async with session.begin():
             try:
-                pelicula_query = text("SELECT precio FROM PELICULAS WHERE id = :movie_id")
-                result = await session.execute(pelicula_query, {"movie_id": movie_id})
-                pelicula = result.mappings().one_or_none()
-                if not pelicula:
-                    return jsonify({"error": "Pelicula no encontrada"}), 404
-                precio = pelicula["precio"]
-                carrito_query = text("SELECT id FROM PEDIDOS WHERE usuario_uid = :user_uid AND estado = 'activo'")
-                result = await session.execute(carrito_query, {"user_uid": user_uid})
-                carrito_id = result.scalar()
-                if not carrito_id:
-                    carrito_query = text("INSERT INTO PEDIDOS (usuario_uid, estado, importe) VALUES (:user_uid, 'activo', 0.0) RETURNING id")
-                    result = await session.execute(carrito_query, {"user_uid": user_uid})
-                    carrito_id = result.scalar()
-                insertar_query = text("INSERT INTO PEDIDO_ITEMS (pedido_id, pelicula_id, cantidad, precio_unitario) VALUES (:pedido_id, :pelicula_id, :cantidad, :precio_unitario) ON CONFLICT (pedido_id, pelicula_id) DO UPDATE SET cantidad = PEDIDO_ITEMS.cantidad + EXCLUDED.cantidad, precio_unitario = EXCLUDED.precio_unitario RETURNING cantidad, precio_unitario")
-                result = await session.execute(insertar_query, {"pedido_id": carrito_id, "pelicula_id": movie_id, "cantidad": quantity, "precio_unitario": precio})
-                item = result.mappings().one()
-                return jsonify({"message": "Pelicula añadida al carrito", "pedido_id": carrito_id, "pelicula_id": movie_id, "cantidad": item["cantidad"], "precio_unitario": float(item["precio_unitario"])}), 201
+                agregar_carrito_query = text("SELECT agregar_carrito(:user_uid, :movie_id, :quantity)")
+                result = await session.execute(agregar_carrito_query, {"user_uid": user_uid, "movie_id": movie_id, "quantity": quantity})
+                pedido_id = result.scalar()
+                # Consultamos la cantidad pedida de la película para devolverlo en la respuesta
+                cantidad_query = text("SELECT cantidad FROM PEDIDO_ITEMS WHERE pedido_id = :pedido_id AND pelicula_id = :movie_id")
+                result = await session.execute(cantidad_query, {"pedido_id": pedido_id, "movie_id": movie_id})
+                cantidad = result.scalar()
+                return jsonify({"message": "Movie added to cart successfully", "cart_id": pedido_id, "movie_id": movie_id, "quantity": cantidad}), 201
+            except Exception as e:
+                error_message = str(e)
+                if "no existe" in error_message.lower():
+                    return jsonify({"error": "Pelicula no encontrada", "details": str(e)}), 404
+                if "stock" in error_message.lower():
+                    return jsonify({"error": "Stock insuficiente para la pelicula solicitada", "details": str(e)}), 409
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+            
+# Pagar el carrito de un usuario
+@app.post('/api/carrito/pagar')
+async def pay_cart():
+    user_uid = extract_uid_from_token()
+    if not user_uid:
+        return jsonify({"error": "Token de usuario inválido o no proporcionado"}), 401
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                pagar_carrito_query = text("SELECT pagar_carrito_usuario(:user_uid)")
+                result = await session.execute(pagar_carrito_query, {"user_uid": user_uid})
+                pedido_id = result.scalar()
+                return jsonify({"message": "Cart paid successfully", "cart_id": pedido_id}), 200
+            except Exception as e:
+                error_message = str(e)
+                if "activo" in error_message.lower():
+                    return jsonify({"error": "No hay un carrito activo para este usuario"}), 404
+                if "vacio" in error_message.lower():
+                    return jsonify({"error": "El carrito está vacío", "details": str(e)}), 400
+                if "saldo" in error_message.lower():
+                    return jsonify({"error": "Saldo insuficiente para completar el pago", "details": str(e)}), 402
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+
+# Votar una película
+@app.post('/api/peliculas/<int:movie_id>/votar')
+async def vote_movie(movie_id: int):
+    user_uid = extract_uid_from_token()
+    if not user_uid:
+        return jsonify({"error": "Token de usuario inválido o no proporcionado"}), 401
+    data = await request.get_json()
+    if not data or "vote" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (vote)"}), 400
+    vote = data["vote"]
+    if not isinstance(vote, int):
+        return jsonify({"error": "El voto debe ser un número entero"}), 400
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                query = text("SELECT votar_pelicula(:user_uid, :movie_id, :vote)")
+                await session.execute(query, {"user_uid": user_uid, "movie_id": movie_id, "vote": vote})
+                return jsonify({"message": "Movie rated successfully"}), 200
+            except Exception as e:
+                error_message = str(e)
+                if "no existe" in error_message.lower():
+                    return jsonify({"error": "Pelicula no encontrada", "details": str(e)}), 404
+                if "entre 0 y 10" in error_message.lower():
+                    return jsonify({"error": "El voto debe estar entre 0 y 10", "details": str(e)}), 422
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+
+# Obtener el promedio de los votos de una película
+@app.get('/api/peliculas/<int:movie_id>/votos')
+async def get_movie_votes(movie_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                query = text("SELECT valoracion_media(:movie_id)")
+                result = await session.execute(query, {"movie_id": movie_id})
+                promedio = result.scalar()
+                return jsonify({"message": "Average rating obtained successfully", "movie_id": movie_id, "average": float(promedio)}), 200
+            except Exception as e:
+                error_message = str(e)
+                if "no existe" in error_message.lower():
+                    return jsonify({"error": "Pelicula no encontrada", "details": str(e)}), 404
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+
+# Obtener historial de ventas en un año dado para los clientes pertenecientes a un país específico
+@app.get('/api/ventas/<int:anio>/<string:pais>')
+async def get_sales(anio: int, pais: str):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                query = text("SELECT * FROM obtener_ventas_anio_pais(:anio, :pais)")
+                result = await session.execute(query, {"anio": anio, "pais": pais})
+                ventas = result.mappings().all()
+                ventas_list = []
+                for venta in ventas:
+                    venta_dict = {
+                        "sale_id": venta["pedido_id"],
+                        "user_uid": venta["usuario_uid"],
+                        "username": venta["username"],
+                        "amount": float(venta["importe"]), 
+                        "date": venta["fecha_pago"].isoformat() if venta["fecha_pago"] else None
+                    }
+                    ventas_list.append(venta_dict)
+                return jsonify({"message": "Sales history obtained successfully", "year": anio, "country": pais, "sales": ventas_list}), 200
             except Exception as e:
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
-    
