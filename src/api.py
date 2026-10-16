@@ -77,10 +77,10 @@ async def create_movie():
                 result = await session.execute(query, {"title": title, "year": year, "price": price, "genre": genre, "stock": stock})
                 movie_id = result.scalar()
                 for actor_id in ids_actors:
-                    query = text("INSERT INTO PELICULAS_ACTORES (movie_id, actor_id) VALUES (:movie_id, :actor_id)")
+                    query = text("INSERT INTO PELICULA_ACTORES (pelicula_id, actor_id) VALUES (:movie_id, :actor_id)")
                     await session.execute(query, {"movie_id": movie_id, "actor_id": actor_id})
                 for director_id in ids_directors:
-                    query = text("INSERT INTO PELICULAS_DIRECTORES (movie_id, director_id) VALUES (:movie_id, :director_id)")
+                    query = text("INSERT INTO PELICULA_DIRECTORES (pelicula_id, director_id) VALUES (:movie_id, :director_id)")
                     await session.execute(query, {"movie_id": movie_id, "director_id": director_id})
                 return jsonify({"message": "Movie created successfully", "movie_id": movie_id}), 201
             # Cuando un actor o director no existe, se lanza una excepción de integridad.
@@ -182,7 +182,7 @@ async def add_actor_to_movie(movie_id: int, actor_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
-                query = text("INSERT INTO PELICULAS_ACTORES (movie_id, actor_id) VALUES (:movie_id, :actor_id)")
+                query = text("INSERT INTO PELICULA_ACTORES (pelicula_id, actor_id) VALUES (:movie_id, :actor_id)")
                 await session.execute(query, {"movie_id": movie_id, "actor_id": actor_id})
                 return jsonify({"message": "Actor added to movie successfully"}), 201
             except IntegrityError as e:
@@ -196,7 +196,7 @@ async def add_director_to_movie(movie_id: int, director_id: int):
     async with async_session() as session:
         async with session.begin():
             try:
-                query = text("INSERT INTO PELICULAS_DIRECTORES (movie_id, director_id) VALUES (:movie_id, :director_id)")
+                query = text("INSERT INTO PELICULA_DIRECTORES (pelicula_id, director_id) VALUES (:movie_id, :director_id)")
                 await session.execute(query, {"movie_id": movie_id, "director_id": director_id})
                 return jsonify({"message": "Director added to movie successfully"}), 201
             except IntegrityError as e:
