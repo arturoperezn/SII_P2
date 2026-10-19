@@ -37,4 +37,5 @@ Thumbs.db
 # Datos generados en ejecución y pruebas
 data_users/
 shared_data/
+revision_optimizacion/
 *.json
