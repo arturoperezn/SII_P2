@@ -1,7 +1,7 @@
 --Estos datos iniciales los hemos generado con ayuda de chatgpt:
 -- Creamos 10 000 usuarios y 30 000 pedidos de prueba entre 2024 y 2026.
 -- Son datos para medir consultas: los pedidos no tienen articulos ni cobran saldo.
--- Las contrasenas son ficticias. No cambiamos los datos de populate.sql.
+-- Las contrasenas son ficticias. Conservamos los datos originales del populate.
 -- Si repetimos el script, no se duplican estos usuarios y pedidos.
 
 BEGIN;
@@ -41,8 +41,6 @@ WHERE NOT EXISTS (
         AND p.fecha_creacion = fechas.creacion
 );
 
--- Fin de la generacion de datos con ChatGPT.
-
 -- Quitamos nuestros indices para empezar la comparacion sin ellos.
 DROP INDEX IF EXISTS public.idx_usuarios_pais;
 DROP INDEX IF EXISTS public.idx_pedidos_pagados_usuario_fecha;
@@ -53,7 +51,7 @@ ANALYZE public.pedidos;
 -- Borramos las consultas preparadas de esta sesion.
 DEALLOCATE ALL;
 
--- Probamos la consulta original. La primera ejecucion es de calentamiento.
+-- Probamos la consulta original. 
 PREPARE opt_original AS
 SELECT
     pedido.id,
@@ -71,6 +69,7 @@ EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
+
 
 -- Cambiamos EXTRACT por un intervalo de fechas.
 PREPARE opt_intervalo AS
@@ -93,7 +92,6 @@ EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 
 
-
 -- Creamos los indices y repetimos la consulta con intervalo.
 CREATE INDEX idx_usuarios_pais ON public.usuarios (pais);
 CREATE INDEX idx_pedidos_pagados_usuario_fecha
@@ -107,6 +105,7 @@ EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
+
 
 -- Actualizamos la funcion de ventas con el filtro por intervalo.
 CREATE OR REPLACE FUNCTION obtener_ventas_anio_pais(p_anio INT, p_pais VARCHAR(100))
