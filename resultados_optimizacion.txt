@@ -1,6 +1,6 @@
 BEGIN
-INSERT 0 10000
-INSERT 0 30000
+INSERT 0 0
+INSERT 0 0
 DROP INDEX
 DROP INDEX
 ANALYZE
@@ -9,266 +9,77 @@ DEALLOCATE ALL
 PREPARE
                                                           QUERY PLAN                                                           
 -------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1200.55 rows=30 width=67) (actual time=0.999..6.978 rows=2002 loops=1)
+ Hash Join  (cost=304.10..1200.56 rows=30 width=67) (actual time=1.722..12.564 rows=2002 loops=1)
    Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
    Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=150 width=54) (actual time=0.011..5.012 rows=10003 loops=1)
+   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=150 width=54) (actual time=0.011..8.972 rows=10003 loops=1)
          Filter: (((estado)::text = 'pagado'::text) AND (EXTRACT(year FROM fecha_pago) = '2026'::numeric))
          Rows Removed by Filter: 20001
          Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.982..0.983 rows=2002 loops=1)
+   ->  Hash  (cost=279.07..279.07 rows=2002 width=50) (actual time=1.698..1.699 rows=2002 loops=1)
          Buckets: 2048  Batches: 1  Memory Usage: 179kB
          Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.003..0.681 rows=2002 loops=1)
+         ->  Seq Scan on usuarios usuario  (cost=0.00..279.07 rows=2002 width=50) (actual time=0.006..1.143 rows=2002 loops=1)
                Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
+               Rows Removed by Filter: 8004
                Buffers: shared hit=154
  Planning:
-   Buffers: shared hit=79
- Planning Time: 0.523 ms
- Execution Time: 7.072 ms
+   Buffers: shared hit=67
+ Planning Time: 0.635 ms
+ Execution Time: 12.721 ms
 (18 rows)
-
-                                                          QUERY PLAN                                                           
--------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1200.55 rows=30 width=67) (actual time=0.991..6.985 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=150 width=54) (actual time=0.022..5.069 rows=10003 loops=1)
-         Filter: (((estado)::text = 'pagado'::text) AND (EXTRACT(year FROM fecha_pago) = '2026'::numeric))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.964..0.965 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.003..0.651 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.002 ms
- Execution Time: 7.093 ms
-(16 rows)
-
-                                                          QUERY PLAN                                                           
--------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1200.55 rows=30 width=67) (actual time=0.978..6.905 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=150 width=54) (actual time=0.004..4.967 rows=10003 loops=1)
-         Filter: (((estado)::text = 'pagado'::text) AND (EXTRACT(year FROM fecha_pago) = '2026'::numeric))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.969..0.969 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.002..0.669 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.002 ms
- Execution Time: 7.019 ms
-(16 rows)
-
-                                                          QUERY PLAN                                                           
--------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1200.55 rows=30 width=67) (actual time=0.978..6.774 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=150 width=54) (actual time=0.005..4.856 rows=10003 loops=1)
-         Filter: (((estado)::text = 'pagado'::text) AND (EXTRACT(year FROM fecha_pago) = '2026'::numeric))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.970..0.970 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.002..0.672 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.002 ms
- Execution Time: 6.881 ms
-(16 rows)
 
 PREPARE
                                                                                             QUERY PLAN                                                                                            
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1226.34 rows=1995 width=67) (actual time=0.909..3.941 rows=2002 loops=1)
+ Hash Join  (cost=304.10..1226.35 rows=1995 width=67) (actual time=0.905..4.516 rows=2002 loops=1)
    Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
    Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.004..2.083 rows=10003 loops=1)
+   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.004..2.384 rows=10003 loops=1)
          Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
          Rows Removed by Filter: 20001
          Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.902..0.903 rows=2002 loops=1)
+   ->  Hash  (cost=279.07..279.07 rows=2002 width=50) (actual time=0.892..0.894 rows=2002 loops=1)
          Buckets: 2048  Batches: 1  Memory Usage: 179kB
          Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.002..0.618 rows=2002 loops=1)
+         ->  Seq Scan on usuarios usuario  (cost=0.00..279.07 rows=2002 width=50) (actual time=0.003..0.601 rows=2002 loops=1)
                Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
+               Rows Removed by Filter: 8004
                Buffers: shared hit=154
  Planning:
    Buffers: shared hit=9
- Planning Time: 0.223 ms
- Execution Time: 4.043 ms
+ Planning Time: 0.174 ms
+ Execution Time: 4.674 ms
 (18 rows)
 
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1226.34 rows=1995 width=67) (actual time=0.964..4.052 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.003..2.117 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.958..0.959 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.002..0.661 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.001 ms
- Execution Time: 4.147 ms
-(16 rows)
-
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1226.34 rows=1995 width=67) (actual time=0.970..3.930 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.005..2.020 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.961..0.962 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.003..0.655 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.002 ms
- Execution Time: 4.016 ms
-(16 rows)
-
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=304.09..1226.34 rows=1995 width=67) (actual time=0.960..3.903 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=525
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.004..2.017 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=279.06..279.06 rows=2002 width=50) (actual time=0.953..0.953 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=154
-         ->  Seq Scan on usuarios usuario  (cost=0.00..279.06 rows=2002 width=50) (actual time=0.002..0.651 rows=2002 loops=1)
-               Filter: ((pais)::text = 'Francia'::text)
-               Rows Removed by Filter: 8003
-               Buffers: shared hit=154
- Planning Time: 0.002 ms
- Execution Time: 4.004 ms
-(16 rows)
-
 CREATE INDEX
 CREATE INDEX
 ANALYZE
 ANALYZE
                                                                                             QUERY PLAN                                                                                            
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=231.85..1154.10 rows=1995 width=67) (actual time=0.692..3.617 rows=2002 loops=1)
+ Hash Join  (cost=231.85..1154.10 rows=1995 width=67) (actual time=0.809..4.481 rows=2002 loops=1)
    Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
    Buffers: shared hit=525 read=4
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.005..2.015 rows=10003 loops=1)
+   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.006..2.567 rows=10003 loops=1)
          Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
          Rows Removed by Filter: 20001
          Buffers: shared hit=371
-   ->  Hash  (cost=206.83..206.83 rows=2002 width=50) (actual time=0.682..0.683 rows=2002 loops=1)
+   ->  Hash  (cost=206.83..206.83 rows=2002 width=50) (actual time=0.792..0.793 rows=2002 loops=1)
          Buckets: 2048  Batches: 1  Memory Usage: 179kB
          Buffers: shared hit=154 read=4
-         ->  Bitmap Heap Scan on usuarios usuario  (cost=27.80..206.83 rows=2002 width=50) (actual time=0.082..0.326 rows=2002 loops=1)
+         ->  Bitmap Heap Scan on usuarios usuario  (cost=27.80..206.83 rows=2002 width=50) (actual time=0.067..0.364 rows=2002 loops=1)
                Recheck Cond: ((pais)::text = 'Francia'::text)
                Heap Blocks: exact=154
                Buffers: shared hit=154 read=4
-               ->  Bitmap Index Scan on idx_usuarios_pais  (cost=0.00..27.30 rows=2002 width=0) (actual time=0.067..0.067 rows=2002 loops=1)
+               ->  Bitmap Index Scan on idx_usuarios_pais  (cost=0.00..27.30 rows=2002 width=0) (actual time=0.052..0.052 rows=2002 loops=1)
                      Index Cond: ((pais)::text = 'Francia'::text)
                      Buffers: shared read=4
  Planning:
-   Buffers: shared hit=52 read=2
- Planning Time: 0.591 ms
- Execution Time: 3.717 ms
+   Buffers: shared hit=49 read=2
+ Planning Time: 0.447 ms
+ Execution Time: 4.622 ms
 (21 rows)
-
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=231.85..1154.10 rows=1995 width=67) (actual time=0.728..3.636 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=529
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.004..2.003 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=206.83..206.83 rows=2002 width=50) (actual time=0.721..0.721 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=158
-         ->  Bitmap Heap Scan on usuarios usuario  (cost=27.80..206.83 rows=2002 width=50) (actual time=0.054..0.316 rows=2002 loops=1)
-               Recheck Cond: ((pais)::text = 'Francia'::text)
-               Heap Blocks: exact=154
-               Buffers: shared hit=158
-               ->  Bitmap Index Scan on idx_usuarios_pais  (cost=0.00..27.30 rows=2002 width=0) (actual time=0.040..0.040 rows=2002 loops=1)
-                     Index Cond: ((pais)::text = 'Francia'::text)
-                     Buffers: shared hit=4
- Planning Time: 0.002 ms
- Execution Time: 3.735 ms
-(19 rows)
-
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=231.85..1154.10 rows=1995 width=67) (actual time=0.663..3.539 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=529
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.004..1.975 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=206.83..206.83 rows=2002 width=50) (actual time=0.656..0.656 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=158
-         ->  Bitmap Heap Scan on usuarios usuario  (cost=27.80..206.83 rows=2002 width=50) (actual time=0.056..0.286 rows=2002 loops=1)
-               Recheck Cond: ((pais)::text = 'Francia'::text)
-               Heap Blocks: exact=154
-               Buffers: shared hit=158
-               ->  Bitmap Index Scan on idx_usuarios_pais  (cost=0.00..27.30 rows=2002 width=0) (actual time=0.042..0.042 rows=2002 loops=1)
-                     Index Cond: ((pais)::text = 'Francia'::text)
-                     Buffers: shared hit=4
- Planning Time: 0.002 ms
- Execution Time: 3.635 ms
-(19 rows)
-
-                                                                                            QUERY PLAN                                                                                            
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=231.85..1154.10 rows=1995 width=67) (actual time=0.629..3.667 rows=2002 loops=1)
-   Hash Cond: ((pedido.usuario_uid)::text = (usuario.uid)::text)
-   Buffers: shared hit=529
-   ->  Seq Scan on pedidos pedido  (cost=0.00..896.07 rows=9969 width=54) (actual time=0.003..2.086 rows=10003 loops=1)
-         Filter: ((fecha_pago >= '2026-01-01 00:00:00'::timestamp without time zone) AND (fecha_pago < '2027-01-01 00:00:00'::timestamp without time zone) AND ((estado)::text = 'pagado'::text))
-         Rows Removed by Filter: 20001
-         Buffers: shared hit=371
-   ->  Hash  (cost=206.83..206.83 rows=2002 width=50) (actual time=0.623..0.623 rows=2002 loops=1)
-         Buckets: 2048  Batches: 1  Memory Usage: 179kB
-         Buffers: shared hit=158
-         ->  Bitmap Heap Scan on usuarios usuario  (cost=27.80..206.83 rows=2002 width=50) (actual time=0.044..0.279 rows=2002 loops=1)
-               Recheck Cond: ((pais)::text = 'Francia'::text)
-               Heap Blocks: exact=154
-               Buffers: shared hit=158
-               ->  Bitmap Index Scan on idx_usuarios_pais  (cost=0.00..27.30 rows=2002 width=0) (actual time=0.033..0.033 rows=2002 loops=1)
-                     Index Cond: ((pais)::text = 'Francia'::text)
-                     Buffers: shared hit=4
- Planning Time: 0.002 ms
- Execution Time: 3.785 ms
-(19 rows)
 
 CREATE FUNCTION
 DEALLOCATE

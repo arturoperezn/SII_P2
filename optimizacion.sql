@@ -66,9 +66,6 @@ WHERE pedido.estado = 'pagado'
     AND usuario.pais = 'Francia';
 
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_original;
 
 
 -- Cambiamos EXTRACT por un intervalo de fechas.
@@ -87,9 +84,6 @@ WHERE pedido.estado = 'pagado'
     AND usuario.pais = 'Francia';
 
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 
 
 -- Creamos los indices y repetimos la consulta con intervalo.
@@ -101,9 +95,6 @@ WHERE estado = 'pagado';
 ANALYZE public.usuarios;
 ANALYZE public.pedidos;
 
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
-EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 EXPLAIN (ANALYZE, BUFFERS) EXECUTE opt_intervalo;
 
 
