@@ -185,6 +185,9 @@ DECLARE
     v_precio NUMERIC(10, 2);
 BEGIN
     -- Obtener carrito o crear carrito
+    IF NOT EXISTS (SELECT 1 FROM USUARIOS WHERE uid = p_usuario_uid) THEN
+        RAISE EXCEPTION 'El usuario con uid % no existe', p_usuario_uid;
+    END IF;
     SELECT id INTO v_pedido_id FROM PEDIDOS WHERE usuario_uid = p_usuario_uid AND estado = 'activo' LIMIT 1;
     IF v_pedido_id IS NULL THEN
         INSERT INTO PEDIDOS(usuario_uid, estado, importe)
@@ -236,6 +239,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM PELICULAS WHERE id = p_pelicula_id) THEN
         RAISE EXCEPTION 'La pelicula con id % no existe', p_pelicula_id;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM USUARIOS WHERE uid = p_usuario_uid) THEN
+        RAISE EXCEPTION 'El usuario con uid % no existe', p_usuario_uid;
     END IF;
     INSERT INTO VALORACIONES(pelicula_id, usuario_uid, calificacion, fecha_creacion)
     VALUES (p_pelicula_id, p_usuario_uid, p_calificacion, CURRENT_TIMESTAMP)

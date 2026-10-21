@@ -70,6 +70,12 @@ async def create_movie():
     if not title or not year or not price or not genre:
         return jsonify({"error": "Faltan parámetros requeridos (title, year, price, genre)"}), 400
 
+    try:
+        ids_actors = [int(a) for a in ids_actors]
+        ids_directors = [int(d) for d in ids_directors]
+    except (ValueError, TypeError):
+        return jsonify({"error": "Los IDs de actores y directores deben ser números enteros"}), 400
+
     async with async_session() as session:
         async with session.begin():
             try:
@@ -271,6 +277,8 @@ async def get_movies():
                     # Validamos que el año sea entero
                     try:
                         params["year"] = int(anio)
+                        if params["year"] < 0 and isinstance(params["year"], int):
+                            return jsonify({"error": "El parámetro 'anio' debe ser un número entero positivo"}), 400
                         conditions.append("anio = :year")
                     except ValueError:
                         return jsonify({"error": "El parámetro 'anio' debe ser un número entero"}), 400
@@ -313,17 +321,15 @@ async def add_to_cart():
                 agregar_carrito_query = text("SELECT agregar_carrito(:user_uid, :movie_id, :quantity)")
                 result = await session.execute(agregar_carrito_query, {"user_uid": user_uid, "movie_id": movie_id, "quantity": quantity})
                 pedido_id = result.scalar()
-                # Consultamos la cantidad pedida de la película para devolverlo en la respuesta
-                cantidad_query = text("SELECT cantidad FROM PEDIDO_ITEMS WHERE pedido_id = :pedido_id AND pelicula_id = :movie_id")
-                result = await session.execute(cantidad_query, {"pedido_id": pedido_id, "movie_id": movie_id})
-                cantidad = result.scalar()
-                return jsonify({"message": "Movie added to cart successfully", "cart_id": pedido_id, "movie_id": movie_id, "quantity": cantidad}), 201
+                return jsonify({"message": "Movie added to cart successfully", "cart_id": pedido_id, "movie_id": movie_id}), 201
             except Exception as e:
                 error_message = str(e)
                 if "no existe" in error_message.lower():
                     return jsonify({"error": "Pelicula no encontrada", "details": str(e)}), 404
                 if "stock" in error_message.lower():
                     return jsonify({"error": "Stock insuficiente para la pelicula solicitada", "details": str(e)}), 409
+                if "uid" in error_message.lower():
+                    return jsonify({"error": "Usuario no encontrado", "details": str(e)}), 404
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
             
 # Pagar el carrito de un usuario
@@ -373,6 +379,8 @@ async def vote_movie(movie_id: int):
                     return jsonify({"error": "Pelicula no encontrada", "details": str(e)}), 404
                 if "entre 0 y 10" in error_message.lower():
                     return jsonify({"error": "El voto debe estar entre 0 y 10", "details": str(e)}), 422
+                if "uid" in error_message.lower():
+                    return jsonify({"error": "Usuario no encontrado", "details": str(e)}), 404
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
 # Obtener el promedio de los votos de una película
