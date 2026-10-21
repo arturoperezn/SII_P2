@@ -1,34 +1,78 @@
-Como vas a realizar cambios en tu archivo schema.sql, el procedimiento para actualizar el diagrama más adelante consiste en limpiar lo anterior y volver a cargar el archivo limpio.
-Cuando tengas tu .sql definitivo listo, este es el procedimiento exacto paso a paso que debes seguir en pgAdmin 4 (en su cómodo modo claro):
+Registrar el servidor en pgAdmin 4 y generar el diagrama desde cero
 
-Paso 1: Eliminar la Base de Datos antigua
+Estas instrucciones son para pgAdmin instalado en tu equipo. PostgreSQL se ejecuta en Docker; en pgAdmin registras la conexión a ese servidor.
 
-Para evitar conflictos con tablas viejas o modificaciones previas, lo mejor es empezar de cero borrando la base de datos que creaste hoy:
+Paso 1: Arrancar PostgreSQL
+
+Desde la carpeta del proyecto, ejecuta:
+
+sudo docker compose up --build -d
+sudo docker compose ps
+
+Comprueba que el servicio db aparece arrancado y healthy. El puerto publicado en tu equipo es 5433; dentro del contenedor PostgreSQL utiliza el 5432.
+
+Paso 2: Registrar el servidor en pgAdmin
+
 1. Abre pgAdmin 4.
-2. Despliega tu servidor en el panel izquierdo.
-3. Haz clic derecho sobre tu base de datos (mi_diagrama) y selecciona Delete/Drop.... Confirma la eliminación.
+2. Haz clic derecho sobre Servers y selecciona Register > Server...
+3. En la pestaña General, introduce:
+   - Name: SII_P2
+4. En la pestaña Connection, introduce:
+   - Host name/address: 127.0.0.1
+   - Port: 5433
+   - Maintenance database: si1
+   - Username: alumnodb
+   - Password: 1234
+   - Save password?: activado si quieres guardar la contraseña.
+5. Deja el resto de campos con sus valores por defecto y pulsa Save.
+6. Despliega SII_P2 > Databases para ver las bases disponibles.
 
-Paso 2: Crear una Base de Datos limpia
+La contraseña 1234 corresponde al usuario de PostgreSQL alumnodb. La contraseña pwd de los usuarios de prueba de la aplicación es distinta.
 
-1. Haz clic derecho sobre Databases ➔ Create ➔ Database....
-2. Ponle el nombre (puede ser el mismo, mi_diagrama) y haz clic en Save.
+Paso 3: Crear una base independiente para el diagrama
 
-Paso 3: Ejecutar el nuevo schema.sql
+1. Dentro del servidor SII_P2, haz clic derecho sobre Databases > Create > Database...
+2. En Database escribe mi_diagrama.
+3. En Owner selecciona alumnodb y pulsa Save.
+4. Si mi_diagrama ya existe, utiliza otro nombre, por ejemplo mi_diagrama_v2.
 
-1. Haz clic izquierdo para seleccionar la nueva base de datos.
-2. Ve al menú superior Tools ➔ Query Tool.
-3. Haz clic en el icono de la carpeta (Open File) y carga tu nuevo archivo schema.sql modificado.
-4. Presiona la tecla F5 (o el botón de Play) para crear todas las tablas nuevas. Asegúrate de que abajo diga Query returned successfully.
+Esta base permite cargar el schema.sql definitivo para generar el diagrama. La aplicación utiliza la base si1.
 
-Paso 4: Generar y guardar el diagrama definitivo
+Si solo quieres obtener el diagrama de la base que ya usa la aplicación, selecciona si1 y pasa directamente al paso 5, siempre que sus tablas ya estén creadas.
 
-1. Haz clic derecho sobre el nombre de tu base de datos en el panel izquierdo.
-2. Selecciona Generate ER Diagram.
-3. En la barra superior del lienzo, haz clic en el icono de Auto-align (las flechas organizadoras) para acomodar todo automáticamente de forma limpia.
-4. Para exportarlo a imagen: Haz clic en el icono de la cámara/descarga (Download image) para guardarlo como un archivo PNG.
+Paso 4: Cargar schema.sql en la base nueva
 
-💡 Un truco extra para ahorrar tiempo
+1. Selecciona mi_diagrama, o el nombre que hayas elegido.
+2. Abre Tools > Query Tool.
+3. Pulsa Open File y abre:
+   /home/arthur/Desktop/SistemasInformaticos/SII_P2/schema.sql
+4. Ejecuta el archivo completo con Execute Script/F5, sin seleccionar solo una parte del texto.
+5. Comprueba en Messages que la ejecución termina correctamente.
+6. Actualiza el árbol con Refresh y despliega Schemas > public > Tables. Deben aparecer las nueve tablas del proyecto.
 
-Si quieres que el diagrama se guarde con la posición exacta en la que tú acomodes las tablas a mano, dentro de la pantalla del diagrama presiona Ctrl + S y guárdalo como archivo .pgert. Así, si vuelves a cambiar algo pequeño en el futuro, podrás abrir ese archivo de proyecto directamente sin tener que organizar las cajas otra vez.
-¡Mucho éxito terminando de diseñar tu base de datos!
-Cuando vuelvas a este proceso con tu esquema finalizado, ¿te gustaría que revisemos cómo definir correctamente las Llaves Foráneas (Foreign Keys) en tu archivo .sql para asegurarnos de que pgAdmin dibuje las líneas de relación de forma automática?
+Para generar el diagrama basta con la estructura de schema.sql; no hace falta ejecutar populate.sql. Este paso de carga es para la base nueva y vacía.
+
+Paso 5: Generar y organizar el diagrama
+
+1. Haz clic derecho sobre la base que contiene las tablas y selecciona ERD For Database o Generate ERD, según tu versión de pgAdmin.
+2. Pulsa Auto align para ordenar las tablas y sus relaciones.
+3. Utiliza Zoom to fit para ver el conjunto y mueve las tablas si necesitas mejorar la distribución.
+4. Comprueba que aparecen las nueve tablas y las líneas que representan las claves foráneas, con sus cardinalidades.
+
+Paso 6: Guardar el proyecto y exportar la imagen
+
+1. Con la pestaña del diagrama activa, pulsa Save/Ctrl+S y guarda el proyecto como:
+   /home/arthur/Desktop/SistemasInformaticos/SII_P2/Diagrama/diagrama.pgerd
+2. Pulsa Download image para exportar la imagen y guárdala como:
+   /home/arthur/Desktop/SistemasInformaticos/SII_P2/Diagrama/diagrama.png
+3. Abre la imagen exportada y comprueba que los nombres, las relaciones y sus líneas se ven completos antes de incluirla en la memoria.
+
+El archivo editable de pgAdmin utiliza la extensión .pgerd y permite recuperar la distribución de las tablas.
+
+Si vuelves a cambiar schema.sql, crea otra base vacía para el diagrama y repite los pasos 4 a 6. Así obtendrás una imagen que corresponda al esquema actualizado.
+
+Documentación oficial:
+https://www.pgadmin.org/docs/pgadmin4/latest/server_dialog.html
+https://www.pgadmin.org/docs/pgadmin4/latest/database_dialog.html
+https://www.pgadmin.org/docs/pgadmin4/latest/erd_tool.html
+https://www.pgadmin.org/docs/pgadmin4/latest/preferences.html
