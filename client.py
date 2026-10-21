@@ -772,8 +772,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio especifico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -788,8 +788,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -804,8 +804,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -820,8 +820,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -836,8 +836,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -852,8 +852,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -868,8 +868,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas que cumplen con el criterio")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas que cumplen con el criterio")
         else:
             print("[FAIL] No se encontraron películas que cumplan con el criterio")
     else:
@@ -916,8 +916,8 @@ def run_tests():
     if r.status_code == 200:
         print("[OK] Obtener lista de películas por un criterio específico (sin criterios) (HTTP 200)")
         data = r.json()
-        if len(data) > 0:
-            print(f"[OK] Se encontraron {len(data)} películas")
+        if len(data["Movies"]) > 0:
+            print(f"[OK] Se encontraron {len(data['Movies'])} películas")
         else:
             print("[FAIL] No se encontraron películas")
     else:
