@@ -3,12 +3,13 @@
 -- Limpieza de datos
 TRUNCATE TABLE VALORACIONES, PEDIDO_ITEMS, PEDIDOS, PELICULA_ACTORES, PELICULA_DIRECTORES, ACTORES, DIRECTORES, PELICULAS, USUARIOS CASCADE;
 
+-- Contrasena de prueba para los cinco usuarios: pwd (hash SHA-256).
 INSERT INTO USUARIOS (username, password_hash, pais, saldo) VALUES
-('juan_perez', '$2b$12$e8N4y.e1gM5I9Z8QyO1gJeZ9Y3gG2K1P0Q9W8E7R6T5Y4U3I2O1P', 'España', 150.00),
-('marie_curie', '$2b$12$K8xN8u1Z2Y3X4W5V6U7T8e9R0Q1P2O3N4M5L6K7J8I9H0G1F2E3D4', 'Francia', 80.50),
-('john_doe', '$2b$12$P1O2N3M4L5K6J7I8H9G0F1E2D3C4B5A678901234567890123456', 'Estados Unidos', 200.00),
-('pierre_dupont', '$2b$12$K8xN8u1Z2Y3X4W5V6U7T8e9R0Q1P2O3N4M5L6K7J8I9H0G1F2E3D4', 'Francia', 50.00),
-('ana_garcia', '$2b$12$e8N4y.e1gM5I9Z8QyO1gJeZ9Y3gG2K1P0Q9W8E7R6T5Y4U3I2O1P', 'España', 0.00);
+('juan_perez', 'a1159e9df3670d549d04524532629f5477ceb7deec9b45e47e8c009506ecb2c8', 'España', 150.00),
+('marie_curie', 'a1159e9df3670d549d04524532629f5477ceb7deec9b45e47e8c009506ecb2c8', 'Francia', 80.50),
+('john_doe', 'a1159e9df3670d549d04524532629f5477ceb7deec9b45e47e8c009506ecb2c8', 'Estados Unidos', 200.00),
+('pierre_dupont', 'a1159e9df3670d549d04524532629f5477ceb7deec9b45e47e8c009506ecb2c8', 'Francia', 50.00),
+('ana_garcia', 'a1159e9df3670d549d04524532629f5477ceb7deec9b45e47e8c009506ecb2c8', 'España', 0.00);
 
 INSERT INTO PELICULAS (id, titulo, anio, genero, precio, stock) VALUES
 (1, 'Inception', 2010, 'Ciencia Ficcion', 12.99, 20),
