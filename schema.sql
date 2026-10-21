@@ -50,7 +50,7 @@ CREATE TABLE PEDIDOS (
 CREATE TABLE PEDIDO_ITEMS (
     id SERIAL PRIMARY KEY,
     pedido_id INT REFERENCES PEDIDOS(id) ON DELETE CASCADE,
-    pelicula_id INT REFERENCES PELICULAS(id) ON DELETE RESTRICT,
+    pelicula_id INT REFERENCES PELICULAS(id) ON DELETE CASCADE,
     cantidad INT NOT NULL DEFAULT 1 CHECK (cantidad > 0),
     precio_unitario NUMERIC(10, 2) NOT NULL CHECK (precio_unitario >= 0),
     UNIQUE(pedido_id, pelicula_id)
@@ -115,7 +115,11 @@ DECLARE
 BEGIN
     SELECT estado INTO v_estado FROM PEDIDOS WHERE id = COALESCE(NEW.pedido_id, OLD.pedido_id);
     IF v_estado != 'activo' THEN
-        RAISE EXCEPTION 'No se pueden modificar items de un pedido ya pagado';
+        IF TG_OP = 'DELETE' THEN
+            RETURN OLD; 
+        ELSE
+            RAISE EXCEPTION 'No se pueden modificar items de un pedido ya pagado';
+        END IF;
     END IF;
 
     IF TG_OP = 'INSERT' THEN

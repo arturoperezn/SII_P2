@@ -134,7 +134,7 @@ async def login():
     name = data.get("name")
     password = data.get("password")
 
-    if not isinstance(name, str) or not name.strip() or len(name) > 100:
+    if not isinstance(name, str) or len(name) > 100 or not name:
         return jsonify({"error": "Name no válido"}), 400
 
     if not isinstance(password, str) or not password:
