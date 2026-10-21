@@ -1,19 +1,21 @@
-import asyncio
 import os
 from pathlib import Path
 from uuid import uuid4, uuid5, UUID
-import bcrypt
+from hashlib import sha256
 from quart import Quart, jsonify, request
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from hmac import compare_digest
 from decimal import Decimal, InvalidOperation
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DBAPIError
 
 app = Quart(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://alumnodb:1234@localhost:5432/si1")
 engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
 
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
 def load_or_create_secret_uuid():
@@ -34,13 +36,12 @@ def load_or_create_secret_uuid():
 
 secret_uuid = load_or_create_secret_uuid()
 
-async def hash_pwd(password: str) -> str:
-    hashed = await asyncio.to_thread(bcrypt.hashpw, password.encode("utf-8"), bcrypt.gensalt())
-    return hashed.decode("utf-8")
+def hash_pwd(password: str) -> str:
+    return sha256(password.encode("utf-8")).hexdigest()
 
 
-async def check_pwd(password: str, stored_hash: str) -> bool:
-    return await asyncio.to_thread(bcrypt.checkpw, password.encode("utf-8"), stored_hash.encode("utf-8"))
+def check_pwd(password: str, stored_hash: str) -> bool:
+    return compare_digest(hash_pwd(password), stored_hash)
 
 def generate_token(user_uid: str) -> str:
     token_hash = str(uuid5(UUID(secret_uuid), user_uid))
@@ -91,14 +92,11 @@ async def create_user():
     if not isinstance(password, str) or not password:
         return jsonify({"error": "Falta password válida"}), 400
 
-    if len(password.encode("utf-8")) > 72:
-        return jsonify({"error": "Password no puede superar 72 bytes"}), 400
-
     if not isinstance(pais, str) or not pais.strip() or len(pais) > 100:
         return jsonify({"error": "Pais debe tener entre 1 y 100 caracteres"}), 400
 
     user_uid = str(uuid4())
-    pwd_hash = await hash_pwd(password)
+    pwd_hash = hash_pwd(password)
 
     query = text("""
         INSERT INTO USUARIOS (uid, username, password_hash, pais)
@@ -107,14 +105,15 @@ async def create_user():
         RETURNING uid
     """)
 
-    async with engine.begin() as conn:
-        result = await conn.execute(query, {
-            "uid": user_uid,
-            "username": name,
-            "password_hash": pwd_hash,
-            "pais": pais
-        })
-        created_uid = result.scalar()
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query, {
+                "uid": user_uid,
+                "username": name,
+                "password_hash": pwd_hash,
+                "pais": pais
+            })
+            created_uid = result.scalar()
 
     if created_uid is None:
         return jsonify({"error": "El usuario ya existe"}), 409
@@ -141,28 +140,20 @@ async def login():
     if not isinstance(password, str) or not password:
         return jsonify({"error": "Falta password válida"}), 400
 
-    if len(password.encode("utf-8")) > 72:
-        return jsonify({"error": "Password no puede superar 72 bytes"}), 400
-
     query = text("""
         SELECT uid, password_hash
         FROM USUARIOS
         WHERE username = :username
     """)
 
-    async with engine.connect() as conn:
-        result = await conn.execute(query, {"username": name})
+    async with async_session() as session:
+        result = await session.execute(query, {"username": name})
         user = result.mappings().first()
 
     if user is None:
         return jsonify({"error": "Usuario no existe"}), 404
 
-    try:
-        correcta = await check_pwd(password, user["password_hash"])
-    except ValueError:
-        correcta = False
-
-    if not correcta:
+    if not check_pwd(password, user["password_hash"]):
         return jsonify({"error": "Password incorrecta"}), 401
 
     return jsonify({
@@ -188,10 +179,7 @@ async def modify_user():
     if not isinstance(password, str) or not password:
         return jsonify({"error": "Falta nueva password válida"}), 400
 
-    if len(password.encode("utf-8")) > 72:
-        return jsonify({"error": "Password no puede superar 72 bytes"}), 400
-
-    pwd_hash = await hash_pwd(password)
+    pwd_hash = hash_pwd(password)
 
     query = text("""
         UPDATE USUARIOS
@@ -200,12 +188,13 @@ async def modify_user():
         RETURNING uid
     """)
 
-    async with engine.begin() as conn:
-        result = await conn.execute(query, {
-            "password_hash": pwd_hash,
-            "uid": user_uid
-        })
-        updated_uid = result.scalar()
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query, {
+                "password_hash": pwd_hash,
+                "uid": user_uid
+            })
+            updated_uid = result.scalar()
 
     if updated_uid is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -225,9 +214,10 @@ async def delete_user():
         RETURNING uid
     """)
 
-    async with engine.begin() as conn:
-        result = await conn.execute(query, {"uid": user_uid})
-        deleted_uid = result.scalar()
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query, {"uid": user_uid})
+            deleted_uid = result.scalar()
 
     if deleted_uid is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -276,13 +266,16 @@ async def recharge_balance():
     """)
 
     try:
-        async with engine.begin() as conn:
-            result = await conn.execute(query, {
-                "amount": amount,
-                "uid": user_uid
-            })
-            new_balance = result.scalar()
-    except DataError:
+        async with async_session() as session:
+            async with session.begin():
+                result = await session.execute(query, {
+                    "amount": amount,
+                    "uid": user_uid
+                })
+                new_balance = result.scalar()
+    except DBAPIError as error:
+        if getattr(error.orig, "sqlstate", None) != "22003":
+            raise
         return jsonify({"error": "El saldo resultante supera el límite permitido"}), 409
 
     if new_balance is None:
@@ -302,8 +295,8 @@ async def logout():
 
     query = text("SELECT uid FROM USUARIOS WHERE uid = :uid")
 
-    async with engine.connect() as conn:
-        result = await conn.execute(query, {"uid": user_uid})
+    async with async_session() as session:
+        result = await session.execute(query, {"uid": user_uid})
         existing_uid = result.scalar()
 
     if existing_uid is None:
