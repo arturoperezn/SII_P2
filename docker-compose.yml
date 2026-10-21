@@ -23,6 +23,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
+      dns:
+        - 8.8.8.8
+        - 1.1.1.1
     container_name: si1_usersvc
     command: ["hypercorn", "src.user:app", "--bind", "0.0.0.0:5050"]
     ports:
@@ -41,6 +45,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
+      dns:
+        - 8.8.8.8
+        - 1.1.1.1
     container_name: si1_apisvc
     command: ["hypercorn", "src.api:app", "--bind", "0.0.0.0:5051"]
     ports:
