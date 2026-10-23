@@ -222,7 +222,7 @@ async def add_stock_to_movie(movie_id: int):
     if not data or "stock" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
     stock = data["stock"]
-    if not isinstance(stock, int) or stock == 0:
+    if not isinstance(stock, int) or isinstance(stock, bool)or stock == 0:
         return jsonify({"error": "El stock debe ser un número entero positivo o negativo no nulo"}), 400
 
     async with async_session() as session:
@@ -246,7 +246,7 @@ async def set_stock_of_movie(movie_id: int):
     if not data or "stock" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
     stock = data["stock"]
-    if not isinstance(stock, int) or stock < 0:
+    if not isinstance(stock, int) or isinstance(stock, bool) or stock < 0:
         return jsonify({"error": "El stock debe ser un número entero no negativo"}), 400
 
     async with async_session() as session:
@@ -293,6 +293,8 @@ async def get_movies():
                         params["year"] = int(anio)
                         if params["year"] < 0 and isinstance(params["year"], int):
                             return jsonify({"error": "El parámetro 'anio' debe ser un número entero positivo"}), 400
+                        if isinstance(params["year"], bool):
+                            return jsonify({"error": "El parámetro 'anio' debe ser un número entero positivo"}), 400
                         conditions.append("anio = :year")
                     except ValueError:
                         return jsonify({"error": "El parámetro 'anio' debe ser un número entero"}), 400
@@ -328,10 +330,10 @@ async def add_to_cart():
     if "movie_id" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
     movie_id = data.get("movie_id")
-    if not isinstance(movie_id, int) or movie_id <= 0:
+    if not isinstance(movie_id, int) or isinstance(movie_id, bool) or movie_id <= 0:
         return jsonify({"error": "El parámetro 'movie_id' debe ser un número entero positivo"}), 400
     quantity = data.get("quantity", 1)
-    if not isinstance(quantity, int) or quantity <= 0:
+    if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity <= 0:
         return jsonify({"error": "El parámetro 'quantity' debe ser un número entero positivo"}), 400
     async with async_session() as session:
         async with session.begin():
@@ -383,7 +385,7 @@ async def vote_movie(movie_id: int):
     if not data or "vote" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (vote)"}), 400
     vote = data["vote"]
-    if not isinstance(vote, int):
+    if not isinstance(vote, int) or isinstance(vote, bool):
         return jsonify({"error": "El voto debe ser un número entero"}), 400
     async with async_session() as session:
         async with session.begin():
