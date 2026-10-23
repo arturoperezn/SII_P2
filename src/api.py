@@ -96,11 +96,9 @@ async def create_movie():
                 return jsonify({"message": "Movie created successfully", "movie_id": movie_id}), 201
             # Cuando un actor o director no existe, se lanza una excepción de integridad.
             except IntegrityError as e:
-                await session.rollback()
                 return jsonify({"error": "Error de integridad en la base de datos", "details": str(e)}), 409
             # Si ocurre algún otro error, lo manejamos aquí.
             except Exception as e:
-                await session.rollback()
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
 # Eliminación de película

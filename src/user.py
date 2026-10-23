@@ -115,7 +115,6 @@ async def create_user():
                 })
                 created_uid = result.scalar()
             except Exception as e:
-                await session.rollback()
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if created_uid is None:
@@ -156,7 +155,6 @@ async def login():
             result = await session.execute(query, {"username": name})
             user = result.mappings().first()
         except Exception as e:
-            await session.rollback()
             return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if user is None:
@@ -209,7 +207,6 @@ async def modify_user():
                 })
                 updated_uid = result.scalar()
             except Exception as e:
-                await session.rollback()
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if updated_uid is None:
@@ -236,7 +233,6 @@ async def delete_user():
                 result = await session.execute(query, {"uid": user_uid})
                 deleted_uid = result.scalar()
             except Exception as e:
-                await session.rollback()
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if deleted_uid is None:
@@ -298,8 +294,10 @@ async def recharge_balance():
                 new_balance = result.scalar()
     except DBAPIError as error:
         if getattr(error.orig, "sqlstate", None) != "22003":
-            raise
+            return jsonify({"error": "El saldo resultante supera el límite permitido"}), 409
         return jsonify({"error": "El saldo resultante supera el límite permitido"}), 409
+    except Exception as e:
+        return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if new_balance is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -323,7 +321,6 @@ async def logout():
             result = await session.execute(query, {"uid": user_uid})
             existing_uid = result.scalar()
         except Exception as e:
-            await session.rollback()
             return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if existing_uid is None:
