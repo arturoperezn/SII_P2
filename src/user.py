@@ -74,11 +74,13 @@ def check_login():
 
 @app.put("/user")
 async def create_user():
-    data = await request.get_json(silent=True)
+    data = await request.get_json()
 
-    if not isinstance(data, dict):
-        return jsonify({"error": "Se requiere un objeto JSON"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (name, password, pais)"}), 400
 
+    if "name" not in data or "password" not in data or "pais" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (name, password, pais)"}), 400
     name = data.get("name")
     password = data.get("password")
     pais = data.get("pais")
@@ -104,13 +106,17 @@ async def create_user():
 
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(query, {
-                "uid": user_uid,
-                "username": name,
-                "password_hash": pwd_hash,
-                "pais": pais
-            })
-            created_uid = result.scalar()
+            try:
+                result = await session.execute(query, {
+                    "uid": user_uid,
+                    "username": name,
+                    "password_hash": pwd_hash,
+                    "pais": pais
+                })
+                created_uid = result.scalar()
+            except Exception as e:
+                await session.rollback()
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if created_uid is None:
         return jsonify({"error": "El usuario ya existe"}), 409
@@ -123,11 +129,13 @@ async def create_user():
 
 @app.post("/user")
 async def login():
-    data = await request.get_json(silent=True)
+    data = await request.get_json()
 
-    if not isinstance(data, dict):
-        return jsonify({"error": "Se requiere un objeto JSON"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (name, password)"}), 400
 
+    if "name" not in data or "password" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (name, password)"}), 400
     name = data.get("name")
     password = data.get("password")
 
@@ -144,8 +152,12 @@ async def login():
     """)
 
     async with async_session() as session:
-        result = await session.execute(query, {"username": name})
-        user = result.mappings().first()
+        try:
+            result = await session.execute(query, {"username": name})
+            user = result.mappings().first()
+        except Exception as e:
+            await session.rollback()
+            return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if user is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -166,10 +178,13 @@ async def modify_user():
     if user_uid is None:
         return jsonify({"error": "No autorizado"}), 401
 
-    data = await request.get_json(silent=True)
+    data = await request.get_json()
 
-    if not isinstance(data, dict):
-        return jsonify({"error": "Se requiere un objeto JSON"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (password)"}), 400
+
+    if "password" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (password)"}), 400
 
     password = data.get("password")
 
@@ -187,11 +202,15 @@ async def modify_user():
 
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(query, {
-                "password_hash": pwd_hash,
-                "uid": user_uid
-            })
-            updated_uid = result.scalar()
+            try:
+                result = await session.execute(query, {
+                    "password_hash": pwd_hash,
+                    "uid": user_uid
+                })
+                updated_uid = result.scalar()
+            except Exception as e:
+                await session.rollback()
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if updated_uid is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -213,8 +232,12 @@ async def delete_user():
 
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(query, {"uid": user_uid})
-            deleted_uid = result.scalar()
+            try:
+                result = await session.execute(query, {"uid": user_uid})
+                deleted_uid = result.scalar()
+            except Exception as e:
+                await session.rollback()
+                return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if deleted_uid is None:
         return jsonify({"error": "Usuario no existe"}), 404
@@ -228,10 +251,13 @@ async def recharge_balance():
     if user_uid is None:
         return jsonify({"error": "No autorizado"}), 401
 
-    data = await request.get_json(silent=True)
+    data = await request.get_json()
 
-    if not isinstance(data, dict):
-        return jsonify({"error": "Se requiere un objeto JSON"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (saldo)"}), 400
+
+    if "saldo" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (saldo)"}), 400
 
     value = data.get("saldo")
 
@@ -293,8 +319,12 @@ async def logout():
     query = text("SELECT uid FROM USUARIOS WHERE uid = :uid")
 
     async with async_session() as session:
-        result = await session.execute(query, {"uid": user_uid})
-        existing_uid = result.scalar()
+        try:
+            result = await session.execute(query, {"uid": user_uid})
+            existing_uid = result.scalar()
+        except Exception as e:
+            await session.rollback()
+            return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
     if existing_uid is None:
         return jsonify({"error": "Usuario no existe"}), 404

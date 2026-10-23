@@ -55,8 +55,8 @@ def extract_uid_from_token():
 @app.post('/api/peliculas')
 async def create_movie():
     data = await request.get_json()
-    if not data:
-        return jsonify({"error": "Faltan parámetros requeridos"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (title, year, price, genre)"}), 400
     if "title" not in data or "year" not in data or "price" not in data or "genre" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (title, year, price, genre)"}), 400
     title = data.get("title")
@@ -121,8 +121,8 @@ async def delete_movie(movie_id: int):
 @app.post('/api/directores')
 async def create_director():
     data = await request.get_json()
-    if not data:
-        return jsonify({"error": "Faltan parámetros requeridos"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
     if "name" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
     name = data.get("name")
@@ -157,8 +157,8 @@ async def delete_director(director_id: int):
 @app.post('/api/actores')
 async def create_actor():
     data = await request.get_json()
-    if not data:
-        return jsonify({"error": "Faltan parámetros requeridos"}), 400
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
     if "name" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
     name = data.get("name")
@@ -221,7 +221,7 @@ async def add_director_to_movie(movie_id: int, director_id: int):
 @app.post('/api/peliculas/<int:movie_id>/stock')
 async def add_stock_to_movie(movie_id: int):
     data = await request.get_json()
-    if not data or "stock" not in data:
+    if not data or "stock" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
     stock = data["stock"]
     if not isinstance(stock, int) or stock == 0:
@@ -245,7 +245,7 @@ async def add_stock_to_movie(movie_id: int):
 @app.put('/api/peliculas/<int:movie_id>/stock')
 async def set_stock_of_movie(movie_id: int):
     data = await request.get_json()
-    if not data or "stock" not in data:
+    if not data or "stock" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (stock)"}), 400
     stock = data["stock"]
     if not isinstance(stock, int) or stock < 0:
@@ -325,7 +325,7 @@ async def add_to_cart():
     if not user_uid:
         return jsonify({"error": "Token de usuario inválido o no proporcionado"}), 401
     data = await request.get_json()
-    if not data:
+    if not data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
     if "movie_id" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
@@ -382,7 +382,7 @@ async def vote_movie(movie_id: int):
     if not user_uid:
         return jsonify({"error": "Token de usuario inválido o no proporcionado"}), 401
     data = await request.get_json()
-    if not data or "vote" not in data:
+    if not data or "vote" not in data or not isinstance(data, dict):
         return jsonify({"error": "Faltan parámetros requeridos (vote)"}), 400
     vote = data["vote"]
     if not isinstance(vote, int):
@@ -441,3 +441,10 @@ async def get_sales(anio: int, pais: str):
                 return jsonify({"message": "Sales history obtained successfully", "year": anio, "country": pais, "sales": ventas_list}), 200
             except Exception as e:
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
+
+@app.after_serving
+async def close_engine():
+    await engine.dispose()
+    
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5051)
