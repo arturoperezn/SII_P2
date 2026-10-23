@@ -1,8 +1,10 @@
---Estos datos iniciales los hemos generado con ayuda de chatgpt:
+-- Se ha utilizado la IA para ayudarnos a generar datos extra a los de populate para poder medir 
+-- tiempos de consulta y optimizar la base de datos
 -- Creamos 10 000 usuarios y 30 000 pedidos de prueba entre 2024 y 2026.
 -- Son datos para medir consultas: los pedidos no tienen articulos ni cobran saldo.
 -- Las contrasenas son ficticias. Conservamos los datos originales del populate.
 -- Si repetimos el script, no se duplican estos usuarios y pedidos.
+-- El codigo del estudio de optimización no se ha generado con IA, solo los datos de prueba.
 
 BEGIN;
 
