@@ -27,7 +27,6 @@ def run_tests():
     if r.status_code == 201:
         print("[OK] Crear usuario Alicia (HTTP 201)")
         data = r.json()
-        uid_alicia = data["uid"]
         token_alicia = data["token"]
     else:
         print(f"[FAIL] Crear usuario Alicia - Esperado: 201, Obtenido: {r.status_code}")
