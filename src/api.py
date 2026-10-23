@@ -60,21 +60,29 @@ async def create_movie():
     data = await request.get_json()
     if not data:
         return jsonify({"error": "Faltan parámetros requeridos"}), 400
-    title = data.get("title")
-    year = data.get("year")
-    price = data.get("price")
-    genre = data.get("genre")
-    stock = data.get("stock", 0)
-    ids_actors = data.get("actors", [])
-    ids_directors = data.get("directors", [])
-    if not title or not year or not price or not genre:
+    if "title" not in data or "year" not in data or "price" not in data or "genre" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (title, year, price, genre)"}), 400
-
-    try:
-        ids_actors = [int(a) for a in ids_actors]
-        ids_directors = [int(d) for d in ids_directors]
-    except (ValueError, TypeError):
-        return jsonify({"error": "Los IDs de actores y directores deben ser números enteros"}), 400
+    title = data.get("title")
+    if not isinstance(title, str) or not title.strip() or len(title) > 255:
+        return jsonify({"error": "El título debe ser una cadena no vacía de máximo 255 caracteres"}), 400
+    year = data.get("year")
+    if not isinstance(year, int) or isinstance(year, bool) or year < 0:
+        return jsonify({"error": "El año debe ser un número entero positivo"}), 400
+    price = data.get("price")
+    if not isinstance(price, (int, float)) or isinstance(price, bool) or price < 0:
+        return jsonify({"error": "El precio debe ser un número positivo"}), 400
+    genre = data.get("genre")
+    if not isinstance(genre, str) or not genre.strip() or len(genre) > 100:
+        return jsonify({"error": "El género debe ser una cadena no vacía de máximo 100 caracteres"}), 400
+    stock = data.get("stock", 0)
+    if not isinstance(stock, int) or isinstance(stock, bool) or stock < 0:
+        return jsonify({"error": "El stock debe ser un número entero no negativo"}), 400
+    ids_actors = data.get("actors", [])
+    if not isinstance(ids_actors, list) or not all(isinstance(a, int) and not isinstance(a, bool) for a in ids_actors):
+        return jsonify({"error": "Los IDs de actores deben ser una lista de números enteros"}), 400
+    ids_directors = data.get("directors", [])
+    if not isinstance(ids_directors, list) or not all(isinstance(d, int) and not isinstance(d, bool) for d in ids_directors):
+        return jsonify({"error": "Los IDs de directores deben ser una lista de números enteros"}), 400
 
     async with async_session() as session:
         async with session.begin():
@@ -98,8 +106,6 @@ async def create_movie():
                 await session.rollback()
                 return jsonify({"error": "Error inesperado", "details": str(e)}), 500
 
-    return jsonify({"message": "Movie created successfully"}), 201
-
 # Eliminación de película
 @app.delete('/api/peliculas/<int:movie_id>')
 async def delete_movie(movie_id: int):
@@ -120,9 +126,11 @@ async def create_director():
     data = await request.get_json()
     if not data:
         return jsonify({"error": "Faltan parámetros requeridos"}), 400
-    name = data.get("name")
-    if not name:
+    if "name" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
+    name = data.get("name")
+    if not isinstance(name, str) or not name.strip() or len(name) > 255:
+        return jsonify({"error": "El nombre del director debe ser una cadena no vacía de máximo 255 caracteres"}), 400
 
     async with async_session() as session:
         async with session.begin():
@@ -154,9 +162,11 @@ async def create_actor():
     data = await request.get_json()
     if not data:
         return jsonify({"error": "Faltan parámetros requeridos"}), 400
-    name = data.get("name")
-    if not name:
+    if "name" not in data:
         return jsonify({"error": "Faltan parámetros requeridos (name)"}), 400
+    name = data.get("name")
+    if not isinstance(name, str) or not name.strip() or len(name) > 255:
+        return jsonify({"error": "El nombre del actor debe ser una cadena no vacía de máximo 255 caracteres"}), 400
 
     async with async_session() as session:
         async with session.begin():
@@ -259,8 +269,14 @@ async def set_stock_of_movie(movie_id: int):
 @app.get('/api/peliculas')
 async def get_movies():
     titulo = request.args.get("titulo")
+    if titulo and not isinstance(titulo, str) or not titulo.strip() or len(titulo) > 255:
+        return jsonify({"error": "El parámetro 'titulo' debe ser una cadena no vacía de máximo 255 caracteres"}), 400
     genero = request.args.get("genero")
+    if genero and not isinstance(genero, str) or not genero.strip() or len(genero) > 100:
+        return jsonify({"error": "El parámetro 'genero' debe ser una cadena no vacía de máximo 100 caracteres"}), 400
     anio = request.args.get("anio")
+    if anio and not isinstance(anio, str) or not anio.strip() or len(anio) > 4:
+        return jsonify({"error": "El parámetro 'anio' debe ser una cadena no vacía de máximo 4 caracteres"}), 400
     async with async_session() as session:
         async with session.begin():
             try:
@@ -311,10 +327,14 @@ async def add_to_cart():
     data = await request.get_json()
     if not data:
         return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
+    if "movie_id" not in data:
+        return jsonify({"error": "Faltan parámetros requeridos (movie_id)"}), 400
     movie_id = data.get("movie_id")
+    if not isinstance(movie_id, int) or movie_id <= 0:
+        return jsonify({"error": "El parámetro 'movie_id' debe ser un número entero positivo"}), 400
     quantity = data.get("quantity", 1)
-    if not movie_id or not isinstance(quantity, int) or quantity <= 0:
-        return jsonify({"error": "Faltan parámetros requeridos (movie_id) o son inválidos (quantity debe ser un número entero positivo)"}), 400
+    if not isinstance(quantity, int) or quantity <= 0:
+        return jsonify({"error": "El parámetro 'quantity' debe ser un número entero positivo"}), 400
     async with async_session() as session:
         async with session.begin():
             try:
