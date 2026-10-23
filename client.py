@@ -210,7 +210,18 @@ def run_tests():
         print(f"[FAIL] Crear usuario para eliminarlo - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 20. Eliminar usuario sin token
+    # 20. Eliminamos el mismo usuario de nuevo para verificar que ya no existe
+    r = requests.delete(
+        f"{USER_URL}/user",
+        headers={"Authorization": f"Bearer {token_eliminar}"}
+    )
+    if r.status_code == 404:
+        print("[OK] Eliminar de nuevo el mismo usuario para verificar que ya no existe (HTTP 404)")
+    else:
+        print(f"[FAIL] Eliminar de nuevo el mismo usuario para verificar que ya no existe - Esperado: 404, Obtenido: {r.status_code}")
+        print(f"       Respuesta: {r.text}")
+
+    # 21. Eliminar usuario sin token
     r = requests.delete(f"{USER_URL}/user")
     if r.status_code == 401:
         print("[OK] Eliminar usuario sin token (HTTP 401)")
@@ -218,7 +229,7 @@ def run_tests():
         print(f"[FAIL] Eliminar usuario sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 21. Eliminar usuario que no existe
+    # 22. Eliminar usuario que no existe
     r = requests.delete(
         f"{USER_URL}/user",
         headers={"Authorization": f"Bearer {token_inexistente}"}
@@ -229,7 +240,7 @@ def run_tests():
         print(f"[FAIL] Eliminar usuario que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 22. Recargar saldo de Alicia
+    # 23. Recargar saldo de Alicia
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": 120.00},
@@ -241,7 +252,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 23. Recargar saldo de Alicia con saldo negativo
+    # 24. Recargar saldo de Alicia con saldo negativo
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": -50.00},
@@ -253,7 +264,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia con saldo negativo - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 24. Recargar saldo de Alicia con 3 decimales
+    # 25. Recargar saldo de Alicia con 3 decimales
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": 10.123},
@@ -265,7 +276,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia con 3 decimales - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 25. Recargar saldo de Alicia con saldo mayor a 99999999.99
+    # 26. Recargar saldo de Alicia con saldo mayor a 99999999.99
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": 100000000.00},
@@ -277,7 +288,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia con saldo mayor a 99999999.99 - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 26. Recargar saldo de Alicia con saldo no numérico
+    # 27. Recargar saldo de Alicia con saldo no numérico
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": "abc"},
@@ -289,7 +300,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia con saldo no numérico - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 27. Recargar saldo de Alicia sin token
+    # 28. Recargar saldo de Alicia sin token
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": 50.00}
@@ -300,7 +311,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de Alicia sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 28. Recargar saldo de usuario que no existe
+    # 29. Recargar saldo de usuario que no existe
     r = requests.patch(
         f"{USER_URL}/user/saldo",
         json={"saldo": 50.00},
@@ -312,7 +323,7 @@ def run_tests():
         print(f"[FAIL] Recargar saldo de usuario que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 29. Cerrar sesión de Alicia
+    # 30. Cerrar sesión de Alicia
     r = requests.post(
         f"{USER_URL}/user/logout",
         headers=headers_alicia
@@ -324,7 +335,7 @@ def run_tests():
         print(f"       Respuesta: {r.text}")
     token_alicia = None  # Invalidamos el token de Alicia para futuras pruebas
 
-    # 30. Cerrar sesión de Alicia sin token
+    # 31. Cerrar sesión de Alicia sin token
     r = requests.post(
         f"{USER_URL}/user/logout"
     )
@@ -334,7 +345,7 @@ def run_tests():
         print(f"[FAIL] Cerrar sesión de Alicia sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 31. Cerrar sesión de usuario que no existe
+    # 32. Cerrar sesión de usuario que no existe
     r = requests.post(
         f"{USER_URL}/user/logout",
         headers={"Authorization": f"Bearer {token_inexistente}"}
@@ -347,7 +358,7 @@ def run_tests():
 
     print("\nIniciando pruebas de la API principal\n")
 
-    # 32. Crear director
+    # 33. Crear director
     r = requests.post(
         f"{API_URL}/api/directores",
         json={"name": "Director 1"}
@@ -360,7 +371,7 @@ def run_tests():
         print(f"[FAIL] Crear director - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 33. Crear director con nombre vacío
+    # 34. Crear director con nombre vacío
     r = requests.post(
         f"{API_URL}/api/directores",
         json={"name": ""}
@@ -371,7 +382,7 @@ def run_tests():
         print(f"[FAIL] Crear director con nombre vacío - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 34. Crear director sin datos
+    # 35. Crear director sin datos
     r = requests.post(
         f"{API_URL}/api/directores",
         json={}
@@ -382,7 +393,7 @@ def run_tests():
         print(f"[FAIL] Crear director sin datos - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 35. Crear actor
+    # 36. Crear actor
     r = requests.post(
         f"{API_URL}/api/actores",
         json={"name": "Actor 1"}
@@ -395,7 +406,7 @@ def run_tests():
         print(f"[FAIL] Crear actor - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 36. Crear actor con nombre vacío
+    # 37. Crear actor con nombre vacío
     r = requests.post(
         f"{API_URL}/api/actores",
         json={"name": ""}
@@ -406,7 +417,7 @@ def run_tests():
         print(f"[FAIL] Crear actor con nombre vacío - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 37. Crear actor sin datos
+    # 38. Crear actor sin datos
     r = requests.post(
         f"{API_URL}/api/actores",
         json={}
@@ -417,7 +428,7 @@ def run_tests():
         print(f"[FAIL] Crear actor sin datos - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 38. Crear una película
+    # 39. Crear una película
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 1", "year": 2010, "price": 19.99, "genre": "Accion", "stock": 10, "directors": [director_id], "actors": [actor_id]}
@@ -430,7 +441,7 @@ def run_tests():
         print(f"[FAIL] Crear una película - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 39. Crear una película sin título
+    # 40. Crear una película sin título
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"year": 2023, "price": 19.99, "genre": "Accion", "stock": 10, "directors": [director_id], "actors": [actor_id]}
@@ -441,7 +452,7 @@ def run_tests():
         print(f"[FAIL] Crear una película sin título - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 40. Crear una película sin año
+    # 41. Crear una película sin año
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 2", "price": 19.99, "genre": "Accion", "stock": 10, "directors": [director_id], "actors": [actor_id]}
@@ -452,7 +463,7 @@ def run_tests():
         print(f"[FAIL] Crear una película sin año - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 41. Crear una película sin precio
+    # 42. Crear una película sin precio
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 3", "year": 2023, "genre": "Accion", "stock": 10, "directors": [director_id], "actors": [actor_id]}
@@ -463,7 +474,7 @@ def run_tests():
         print(f"[FAIL] Crear una película sin precio - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 42. Crear una película sin género
+    # 43. Crear una película sin género
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 4", "year": 2023, "price": 19.99, "stock": 10, "directors": [director_id], "actors": [actor_id]}
@@ -474,7 +485,7 @@ def run_tests():
         print(f"[FAIL] Crear una película sin género - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 43. Crear una película sin stock
+    # 44. Crear una película sin stock
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 5", "year": 2023, "price": 19.99, "genre": "Accion", "directors": [director_id], "actors": [actor_id]}
@@ -485,7 +496,7 @@ def run_tests():
         print(f"[FAIL] Crear una película sin stock - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 44. Crear una película con director que no existe
+    # 45. Crear una película con director que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 6", "year": 2023, "price": 19.99, "genre": "Accion", "stock": 10, "directors": [999], "actors": [actor_id]}
@@ -496,7 +507,7 @@ def run_tests():
         print(f"[FAIL] Crear una película con director que no existe - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 45. Crear una película con actor que no existe
+    # 46. Crear una película con actor que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas",
         json={"title": "Pelicula 7", "year": 2023, "price": 19.99, "genre": "Accion", "stock": 10, "directors": [director_id], "actors": [999]}
@@ -507,7 +518,7 @@ def run_tests():
         print(f"[FAIL] Crear una película con actor que no existe - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 46. Añadir actor a la película
+    # 47. Añadir actor a la película
     # Creamos un nuevo actor
     r = requests.post(
         f"{API_URL}/api/actores",
@@ -528,7 +539,7 @@ def run_tests():
         print(f"[FAIL] Crear actor para añadirlo a la película - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 47. Añadir actor que no existe a la película
+    # 48. Añadir actor que no existe a la película
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/actores/999"
     )
@@ -538,7 +549,7 @@ def run_tests():
         print(f"[FAIL] Añadir actor que no existe a la película - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 48. Añadir actor a película que no existe
+    # 49. Añadir actor a película que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas/999/actores/{actor2_id}"
     )
@@ -548,7 +559,7 @@ def run_tests():
         print(f"[FAIL] Añadir actor a película que no existe - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 49. Añadir director a la película
+    # 50. Añadir director a la película
     # Creamos un nuevo director
     r = requests.post(
         f"{API_URL}/api/directores",
@@ -569,7 +580,7 @@ def run_tests():
         print(f"[FAIL] Crear director para añadirlo a la película - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 50. Añadir director que no existe a la película
+    # 51. Añadir director que no existe a la película
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/directores/999"
     )
@@ -579,7 +590,7 @@ def run_tests():
         print(f"[FAIL] Añadir director que no existe a la película - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 51. Añadir director a película que no existe
+    # 52. Añadir director a película que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas/999/directores/{director2_id}"
     )
@@ -589,7 +600,7 @@ def run_tests():
         print(f"[FAIL] Añadir director a película que no existe - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 52. Añadir stock de la película
+    # 53. Añadir stock de la película
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": 5}
@@ -600,7 +611,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock de la película - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 53. Reducir stock de la película
+    # 54. Reducir stock de la película
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": -5}
@@ -611,7 +622,7 @@ def run_tests():
         print(f"[FAIL] Reducir stock de la película - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 54. Reducir stock de la película a negativo
+    # 55. Reducir stock de la película a negativo
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": -100}
@@ -622,7 +633,7 @@ def run_tests():
         print(f"[FAIL] Reducir stock de la película a negativo - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 55. Añadir stock de la película con cantidad no numérica entera
+    # 56. Añadir stock de la película con cantidad no numérica entera
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": "abc"}
@@ -633,7 +644,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock de la película con cantidad no numérica - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 56. Añadir stock de la película con cantidad no entera (decimal)
+    # 57. Añadir stock de la película con cantidad no entera (decimal)
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": 5.5}
@@ -644,7 +655,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock de la película con cantidad no entera - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 57. Añadir stock de la película con cantidad 0
+    # 58. Añadir stock de la película con cantidad 0
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": 0}
@@ -655,7 +666,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock de la película con cantidad 0 - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 58. Añadir stock sin especificar cantidad
+    # 59. Añadir stock sin especificar cantidad
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": None}
@@ -666,7 +677,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock sin especificar cantidad - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 59. Añadir stock a película sin datos
+    # 60. Añadir stock a película sin datos
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={}
@@ -677,7 +688,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock a película sin datos - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 60. Añadir stock a película que no existe
+    # 61. Añadir stock a película que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas/999/stock",
         json={"stock": 5}
@@ -688,7 +699,7 @@ def run_tests():
         print(f"[FAIL] Añadir stock a película que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 61. Establecer stock de la película
+    # 62. Establecer stock de la película
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": 10}
@@ -699,7 +710,19 @@ def run_tests():
         print(f"[FAIL] Establecer stock de la película - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 62. Establecer stock de la película a negativo
+    # 63. Añadir película al carrito con mayor stock al establecido para verificar que se ha establecido correctamente el stock
+    r = requests.post(
+        f"{API_URL}/api/carrito",
+        json={"quantity": 15, "movie_id": pelicula_id},
+        headers=headers_alicia
+    )
+    if r.status_code == 409:
+        print("[OK] Añadir película al carrito con mayor stock al establecido (HTTP 409) para verificar que se ha establecido correctamente el stock")
+    else:
+        print(f"[FAIL] Añadir película al carrito con mayor stock al establecido - Esperado: 409, Obtenido: {r.status_code}")
+        print(f"       Respuesta: {r.text}")
+
+    # 64. Establecer stock de la película a negativo
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": -10}
@@ -710,7 +733,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de la película a negativo - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 63. Establecer stock de la película con cantidad no numérica entera
+    # 65. Establecer stock de la película con cantidad no numérica entera
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": "abc"}
@@ -721,7 +744,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de la película con cantidad no numérica - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 64. Establecer stock de la película con cantidad no entera (decimal)
+    # 66. Establecer stock de la película con cantidad no entera (decimal)
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": 5.5}
@@ -732,7 +755,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de la película con cantidad no entera - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 65. Establecer stock de la película sin especificar cantidad
+    # 67. Establecer stock de la película sin especificar cantidad
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={"stock": None}
@@ -743,7 +766,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de la película sin especificar cantidad - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 66. Establecer stock de película sin datos
+    # 68. Establecer stock de película sin datos
     r = requests.put(
         f"{API_URL}/api/peliculas/{pelicula_id}/stock",
         json={}
@@ -754,7 +777,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de película sin datos - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 67. Establecer stock de película que no existe
+    # 69. Establecer stock de película que no existe
     r = requests.put(
         f"{API_URL}/api/peliculas/999/stock",
         json={"stock": 5}
@@ -765,7 +788,7 @@ def run_tests():
         print(f"[FAIL] Establecer stock de película que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 68. Obtener lista de películas por un criterio especifico (titulo, genero y año)
+    # 70. Obtener lista de películas por un criterio especifico (titulo, genero y año)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"titulo": "Pelicula 1", "genero": "Accion", "anio": 2010}
@@ -781,7 +804,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio especifico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 69. Obtener lista de películas por un criterio específico (genero y año)
+    # 71. Obtener lista de películas por un criterio específico (genero y año)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"genero": "Accion", "anio": 2010}
@@ -797,7 +820,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 70. Obtener lista de películas por un criterio específico (titulo y año)
+    # 72. Obtener lista de películas por un criterio específico (titulo y año)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"titulo": "Pelicula 1", "anio": 2010}
@@ -813,7 +836,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 71. Obtener lista de películas por un criterio específico (titulo y genero)
+    # 73. Obtener lista de películas por un criterio específico (titulo y genero)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"titulo": "Pelicula 1", "genero": "Accion"}
@@ -829,7 +852,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 72. Obtener lista de películas por un criterio específico (solo titulo)
+    # 74. Obtener lista de películas por un criterio específico (solo titulo)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"titulo": "Pelicula 1"}
@@ -845,7 +868,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 73. Obtener lista de películas por un criterio específico (solo genero)
+    # 75. Obtener lista de películas por un criterio específico (solo genero)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"genero": "Accion"}
@@ -861,7 +884,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 74. Obtener lista de películas por un criterio específico (solo año)
+    # 76. Obtener lista de películas por un criterio específico (solo año)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"anio": 2010}
@@ -877,7 +900,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 75. Obtener lista de películas por un criterio específico (año no numérico entero)
+    # 77. Obtener lista de películas por un criterio específico (año no numérico entero)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"anio": "abc"}
@@ -888,7 +911,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico (año no numérico entero) - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 76. Obtener lista de películas por un criterio específico (año no entero)
+    # 78. Obtener lista de películas por un criterio específico (año no entero)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"anio": 2010.5}
@@ -899,7 +922,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico (año no entero) - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 77. Obtener lista de películas por un criterio específico (año negativo)
+    # 79. Obtener lista de películas por un criterio específico (año negativo)
     r = requests.get(
         f"{API_URL}/api/peliculas",
         params={"anio": -2010}
@@ -910,7 +933,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico (año negativo) - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 78. Obtener lista de películas por un criterio específico (sin criterios)
+    # 80. Obtener lista de películas por un criterio específico (sin criterios)
     r = requests.get(
         f"{API_URL}/api/peliculas"
     )
@@ -925,7 +948,7 @@ def run_tests():
         print(f"[FAIL] Obtener lista de películas por un criterio específico (sin criterios) - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 79. Añadir película al carrito de Alicia
+    # 81. Añadir película al carrito de Alicia
     # Primero iniciamos sesión de Alicia nuevamente para obtener un token válido
     r = requests.post(
         f"{USER_URL}/user",
@@ -949,7 +972,7 @@ def run_tests():
         print(f"[FAIL] Iniciar sesión de Alicia - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 80. Añadir película al carrito de Alicia con cantidad negativa
+    # 82. Añadir película al carrito de Alicia con cantidad negativa
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -961,7 +984,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia con cantidad negativa - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 81. Añadir película al carrito de Alicia con cantidad no numérica
+    # 83. Añadir película al carrito de Alicia con cantidad no numérica
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -973,7 +996,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia con cantidad no numérica - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 82. Añadir película al carrito de Alicia con cantidad no entera (decimal)
+    # 84. Añadir película al carrito de Alicia con cantidad no entera (decimal)
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -985,7 +1008,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia con cantidad no entera - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 83. Añadir película al carrito de Alicia sin especificar película
+    # 85. Añadir película al carrito de Alicia sin especificar película
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -997,7 +1020,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia sin especificar película - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 84. Añadir película al carrito de Alicia sin especificar cantidad
+    # 86. Añadir película al carrito de Alicia sin especificar cantidad
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -1009,7 +1032,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia sin especificar cantidad - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 85. Añadir película al carrito de Alicia que no existe
+    # 87. Añadir película al carrito de Alicia que no existe
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -1021,7 +1044,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 86. Añadir película al carrito de Alicia sin suficiente stock
+    # 88. Añadir película al carrito de Alicia sin suficiente stock
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers=headers_alicia,
@@ -1033,7 +1056,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia sin suficiente stock - Esperado: 409, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 87. Añadir película al carrito de Alicia sin token
+    # 89. Añadir película al carrito de Alicia sin token
     r = requests.post(
         f"{API_URL}/api/carrito",
         json={"movie_id": pelicula_id, "quantity": 1}
@@ -1044,7 +1067,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 88. Añadir película al carrito de un usuario que no existe con token de usuario que no existe
+    # 90. Añadir película al carrito de un usuario que no existe con token de usuario que no existe
     r = requests.post(
         f"{API_URL}/api/carrito",
         headers={"Authorization": f"Bearer {token_inexistente}"},
@@ -1056,7 +1079,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia con token de usuario que no existe - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 89. Pagar carrito de Alicia con token válido
+    # 91. Pagar carrito de Alicia con token válido
     r = requests.post(
         f"{API_URL}/api/carrito/pagar",
         headers=headers_alicia
@@ -1067,7 +1090,7 @@ def run_tests():
         print(f"[FAIL] Pagar carrito de Alicia con token válido - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 90. Pagar carrito de Alicia sin token
+    # 92. Pagar carrito de Alicia sin token
     r = requests.post(
         f"{API_URL}/api/carrito/pagar"
     )
@@ -1077,18 +1100,18 @@ def run_tests():
         print(f"[FAIL] Pagar carrito de Alicia sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 91. Pagar carrito de Alicia de nuevo (sin items en el carrito)
+    # 93. Pagar carrito de Alicia de nuevo (sin items en el carrito) para verificar que no se puede pagar un carrito vacío
     r = requests.post(
         f"{API_URL}/api/carrito/pagar",
         headers=headers_alicia
     )
     if r.status_code == 404:
-        print("[OK] Pagar carrito de Alicia de nuevo (sin items en el carrito) (HTTP 404)")
+        print("[OK] Pagar carrito de Alicia de nuevo (sin items en el carrito) para verificar que no se puede pagar un carrito vacío (HTTP 404)")
     else:
         print(f"[FAIL] Pagar carrito de Alicia de nuevo (sin items en el carrito) - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 92. Pagar carrito de un usuario que no existe con token de usuario que no existe
+    # 94. Pagar carrito de un usuario que no existe con token de usuario que no existe
     r = requests.post(
         f"{API_URL}/api/carrito/pagar",
         headers={"Authorization": f"Bearer {token_inexistente}"}
@@ -1099,7 +1122,7 @@ def run_tests():
         print(f"[FAIL] Pagar carrito de un usuario que no existe con token de usuario que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 93. Pagar carrito Alicia sin suficiente saldo
+    # 95. Pagar carrito Alicia sin suficiente saldo
     # Primero añadimos una película al carrito de Alicia con cantidad suficiente para que el total supere su saldo
     r = requests.post(
         f"{API_URL}/api/carrito",
@@ -1120,7 +1143,7 @@ def run_tests():
         print(f"[FAIL] Añadir película al carrito de Alicia para prueba de pago sin saldo - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 94. Votar película por Alicia con token válido
+    # 96. Votar película por Alicia con token válido
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1132,7 +1155,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia con token válido - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 95. Votar película por Alicia con voto negativo
+    # 97. Votar película por Alicia con voto negativo
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1144,7 +1167,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia con voto negativo - Esperado: 422, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 96. Votar película por Alicia con voto mayor a 10
+    # 98. Votar película por Alicia con voto mayor a 10
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1156,7 +1179,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia con voto mayor a 10 - Esperado: 422, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 97. Votar película por Alicia con voto no numérico entero
+    # 99. Votar película por Alicia con voto no numérico entero
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1168,7 +1191,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia con voto no numérico - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 98. Votar película por Alicia con voto no entero (decimal)
+    # 100. Votar película por Alicia con voto no entero (decimal)
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1180,7 +1203,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia con voto no entero - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 99. Votar película por Alicia sin especificar voto
+    # 101. Votar película por Alicia sin especificar voto
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers=headers_alicia,
@@ -1192,7 +1215,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia sin especificar voto - Esperado: 400, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 100. Votar película por Alicia que no existe
+    # 102. Votar película por Alicia que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas/999/votar",
         headers=headers_alicia,
@@ -1204,7 +1227,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 101. Votar película por un usuario que no existe con token de usuario que no existe
+    # 103. Votar película por un usuario que no existe con token de usuario que no existe
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         headers={"Authorization": f"Bearer {token_inexistente}"},
@@ -1216,7 +1239,7 @@ def run_tests():
         print(f"[FAIL] Votar película por un usuario que no existe con token de usuario que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 102. Votar película por Alicia sin token
+    # 104. Votar película por Alicia sin token
     r = requests.post(
         f"{API_URL}/api/peliculas/{pelicula_id}/votar",
         json={"vote": 5}
@@ -1227,7 +1250,7 @@ def run_tests():
         print(f"[FAIL] Votar película por Alicia sin token - Esperado: 401, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 103. Obtener el promedio de votos de la película
+    # 105. Obtener el promedio de votos de la película
     r = requests.get(
         f"{API_URL}/api/peliculas/{pelicula_id}/votos"
     )
@@ -1239,7 +1262,7 @@ def run_tests():
         print(f"[FAIL] Obtener el promedio de votos de la película - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 104. Obtener el promedio de votos de una película que no existe
+    # 106. Obtener el promedio de votos de una película que no existe
     r = requests.get(
         f"{API_URL}/api/peliculas/999/votos"
     )
@@ -1249,7 +1272,7 @@ def run_tests():
         print(f"[FAIL] Obtener el promedio de votos de una película que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 105. Obtener el promedio de votos de una película sin votos
+    # 107. Obtener el promedio de votos de una película sin votos
     # Creamos una nueva película sin votos
     r = requests.post(
         f"{API_URL}/api/peliculas",
@@ -1272,7 +1295,7 @@ def run_tests():
         print(f"[FAIL] Crear película sin votos - Esperado: 201, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 106. Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico
+    # 108. Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico
     r = requests.get(
         f"{API_URL}/api/ventas/2026/España"
     )
@@ -1282,7 +1305,7 @@ def run_tests():
         print(f"[FAIL] Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 107. Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico sin ventas
+    # 109. Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico sin ventas
     r = requests.get(
         f"{API_URL}/api/ventas/2019/España"
     )
@@ -1292,7 +1315,7 @@ def run_tests():
         print(f"[FAIL] Obtener el historial de ventas en un año dado para los clientes pertenecientes a un país específico sin ventas - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 108. Eliminar una película
+    # 110. Eliminar una película
     r = requests.delete(
         f"{API_URL}/api/peliculas/{pelicula_id}"
     )
@@ -1302,7 +1325,17 @@ def run_tests():
         print(f"[FAIL] Eliminar una película - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 109. Eliminar una película que no existe
+    # 111. Eliminar de nuevo la misma película para verificar que ya no existe
+    r = requests.delete(
+        f"{API_URL}/api/peliculas/{pelicula_id}"
+    )
+    if r.status_code == 404:
+        print("[OK] Eliminar de nuevo la misma película para verificar que ya no existe (HTTP 404)")
+    else:
+        print(f"[FAIL] Eliminar de nuevo la misma película para verificar que ya no existe - Esperado: 404, Obtenido: {r.status_code}")
+        print(f"       Respuesta: {r.text}")
+
+    # 112. Eliminar una película que no existe
     r = requests.delete(
         f"{API_URL}/api/peliculas/999"
     )
@@ -1312,7 +1345,7 @@ def run_tests():
         print(f"[FAIL] Eliminar una película que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 110. Eliminar un director
+    # 113. Eliminar un director
     r = requests.delete(
         f"{API_URL}/api/directores/{director_id}"
     )
@@ -1322,7 +1355,17 @@ def run_tests():
         print(f"[FAIL] Eliminar un director - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 111. Eliminar un director que no existe
+    # 114. Eliminar de nuevo el mismo director para verificar que ya no existe
+    r = requests.delete(
+        f"{API_URL}/api/directores/{director_id}"
+    )
+    if r.status_code == 404:
+        print("[OK] Eliminar de nuevo el mismo director para verificar que ya no existe (HTTP 404)")
+    else:
+        print(f"[FAIL] Eliminar de nuevo el mismo director para verificar que ya no existe - Esperado: 404, Obtenido: {r.status_code}")
+        print(f"       Respuesta: {r.text}")
+
+    # 115. Eliminar un director que no existe
     r = requests.delete(
         f"{API_URL}/api/directores/999"
     )
@@ -1332,7 +1375,7 @@ def run_tests():
         print(f"[FAIL] Eliminar un director que no existe - Esperado: 404, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 112. Eliminar un actor
+    # 116. Eliminar un actor
     r = requests.delete(
         f"{API_URL}/api/actores/{actor_id}"
     )
@@ -1342,7 +1385,17 @@ def run_tests():
         print(f"[FAIL] Eliminar un actor - Esperado: 200, Obtenido: {r.status_code}")
         print(f"       Respuesta: {r.text}")
 
-    # 113. Eliminar un actor que no existe
+    # 117. Eliminar de nuevo el mismo actor para verificar que ya no existe
+    r = requests.delete(
+        f"{API_URL}/api/actores/{actor_id}"
+    ) 
+    if r.status_code == 404:
+          print("[OK] Eliminar de nuevo el mismo actor para verificar que ya no existe (HTTP 404)")
+    else:
+          print(f"[FAIL] Eliminar de nuevo el mismo actor para verificar que ya no existe - Esperado: 404, Obtenido: {r.status_code}")
+          print(f"       Respuesta: {r.text}")
+
+    # 118. Eliminar un actor que no existe
     r = requests.delete(
         f"{API_URL}/api/actores/999"
     )
