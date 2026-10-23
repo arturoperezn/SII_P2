@@ -19,10 +19,7 @@ async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession
 
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
 def load_or_create_secret_uuid():
-    if Path("/app/shared_data").exists() or os.path.exists("/.dockerenv"):
-        secret_path = Path("/app/shared_data/secret_uuid.txt")
-    else:
-        secret_path = Path("shared_data/secret_uuid.txt")
+    secret_path = Path("/app/shared_data/secret_uuid.txt")
     secret_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         secret_uuid = str(uuid4())

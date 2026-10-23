@@ -1,6 +1,5 @@
 import requests
 from pathlib import Path
-import os
 import uuid
 
 USER_URL = "http://127.0.0.1:5050"
@@ -11,7 +10,7 @@ def run_tests():
 
     # Usuario inexistente para pruebas
     uid_inexistente = str(uuid.uuid4())
-    if Path("/app/shared_data").exists() or os.path.exists("/.dockerenv"):
+    if Path("/app/shared_data/secret_uuid.txt").exists():
         secret_path = Path("/app/shared_data/secret_uuid.txt")
     else:
         secret_path = Path("shared_data/secret_uuid.txt")
@@ -19,6 +18,9 @@ def run_tests():
         with open(secret_path, "r") as f:
             secret_uuid = f.read().strip()
         token_inexistente = f"{uid_inexistente}.{uuid.uuid5(uuid.UUID(secret_uuid), uid_inexistente)}"
+    else:
+        print("[FAIL] No se pudo leer el UUID secreto para generar token de usuario inexistente")
+        return
 
     # 1. Crear usuario Alicia
     r = requests.put(f"{USER_URL}/user", json={"name": "alicia", "password": "pwd", "pais": "España"})

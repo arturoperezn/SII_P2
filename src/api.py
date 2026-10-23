@@ -17,10 +17,7 @@ async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession
 
 # Carga o genera un UUID secreto para la aplicación, que se usará para generar tokens de usuario.
 def load_or_create_secret_uuid():
-    if Path("/app/shared_data").exists() or os.path.exists("/.dockerenv"):
-        secret_path = Path("/app/shared_data/secret_uuid.txt")
-    else:
-        secret_path = Path("shared_data/secret_uuid.txt")
+    secret_path = Path("/app/shared_data/secret_uuid.txt")
     secret_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         secret_uuid = str(uuid4())
@@ -269,14 +266,17 @@ async def set_stock_of_movie(movie_id: int):
 @app.get('/api/peliculas')
 async def get_movies():
     titulo = request.args.get("titulo")
-    if titulo and not isinstance(titulo, str) or not titulo.strip() or len(titulo) > 255:
-        return jsonify({"error": "El parámetro 'titulo' debe ser una cadena no vacía de máximo 255 caracteres"}), 400
+    if titulo:
+        if not isinstance(titulo, str) or not titulo.strip() or len(titulo) > 255:
+            return jsonify({"error": "El parámetro 'titulo' debe ser una cadena no vacía de máximo 255 caracteres"}), 400
     genero = request.args.get("genero")
-    if genero and not isinstance(genero, str) or not genero.strip() or len(genero) > 100:
-        return jsonify({"error": "El parámetro 'genero' debe ser una cadena no vacía de máximo 100 caracteres"}), 400
+    if genero:
+        if not isinstance(genero, str) or not genero.strip() or len(genero) > 100:
+            return jsonify({"error": "El parámetro 'genero' debe ser una cadena no vacía de máximo 100 caracteres"}), 400
     anio = request.args.get("anio")
-    if anio and not isinstance(anio, str) or not anio.strip() or len(anio) > 4:
-        return jsonify({"error": "El parámetro 'anio' debe ser una cadena no vacía de máximo 4 caracteres"}), 400
+    if anio:
+        if not isinstance(anio, str) or not anio.strip() or len(anio) > 4:
+            return jsonify({"error": "El parámetro 'anio' debe ser una cadena no vacía de máximo 4 caracteres"}), 400
     async with async_session() as session:
         async with session.begin():
             try:
